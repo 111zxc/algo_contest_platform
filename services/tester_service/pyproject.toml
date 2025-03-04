@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "tester-service"
+version = "0.1.0"
+description = "Code execution service for algo_contest_platform"
+authors = ["Yury Zimarev <yury.zimarev@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+docker = "^7.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
