@@ -1,4 +1,5 @@
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -11,7 +12,8 @@ class Settings(BaseSettings):
     KEYCLOAK_CLIENT_ID: str = Field("myclient", env="KEYCLOAK_CLIENT_ID")
     KEYCLOAK_CLIENT_SECRET: str = Field("secret", env="KEYCLOAK_CLIENT_SECRET")
 
-    KAFKA_BOOTSTRAP_SERVERS: str = Field("kafka:9092", env="KAFKA_BOOTSTRAP_SERVERS")
+    KEYCLOAK_ADMIN: str = Field("admin", env="KEYCLOAK_ADMIN")
+    KEYCLOAK_ADMIN_PASSWORD: str = Field("admin", env="KEYCLOAK_ADMIN_PASSWORD")
 
     class Config:
         env_file = ".env"

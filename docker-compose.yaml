@@ -1,31 +1,72 @@
 services:
+  # --------------------------------------------------------------------------
+  # CONTENT SERVICE
+  # --------------------------------------------------------------------------
   content_service:
-    build: .
+    build: ./services/content_service
     container_name: content_service
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/content_db
-      - KEYCLOAK_URL=http://keycloak:8080
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    env_file:
+      - ./services/content_service/.env
     depends_on:
-      - postgres
+      - content_postgres
       - keycloak
-      - kafka
+    networks:
+      - backend
 
-  postgres:
+  content_postgres:
     image: postgres:13
-    container_name: postgres
+    container_name: content_postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: content_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - content_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - backend
 
+  # --------------------------------------------------------------------------
+  # TESTER SERVICE
+  # --------------------------------------------------------------------------
+  tester_service:
+    build: ./services/tester_service
+    container_name: tester_service
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./services/tester_service/.env
+    volumes:
+      - shared_tmp:/shared_tmp
+    depends_on:
+      - tester_postgres
+      - keycloak
+      - dind
+    networks:
+      - backend
+
+  tester_postgres:
+    image: postgres:13
+    container_name: tester_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tester_db
+    volumes:
+      - tester_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5433"
+    networks:
+      - backend
+
+  # --------------------------------------------------------------------------
+  # KEYCLOAK
+  # --------------------------------------------------------------------------
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
@@ -36,28 +77,60 @@ services:
     ports:
       - "8080:8080"
     command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    networks:
+      - backend
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
+  # --------------------------------------------------------------------------
+  # DOCKER-IN-DOCKER
+  # --------------------------------------------------------------------------
+  dind:
+    image: docker:dind
+    container_name: dind
+    privileged: true
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      DOCKER_TLS_CERTDIR: ""   # отключаем TLS
+    command: ["dockerd-entrypoint.sh", "--host=tcp://0.0.0.0:2375"]
     ports:
-      - "2181:2181"
+      - "2375:2375"
+    volumes:
+      - dind_storage:/var/lib/docker
+      - shared_tmp:/shared_tmp    # добавляем этот volume!
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2375/version"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    networks:
+      - backend
 
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: kafka
+  # --------------------------------------------------------------------------
+  # KRAKEND GATEWAY
+  # --------------------------------------------------------------------------
+  krakend:
+    image: devopsfaith/krakend:watch
+    container_name: krakend
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./services/krakend/krakend.json:/etc/krakend/krakend.json
     depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    ports:
-      - "9092:9092"
+      - content_service
+      - tester_service
+    networks:
+      - backend
+    command: [ "run", "-dc", "/etc/krakend/krakend.json" ]
+
+  # --------------------------------------------------------------------------
 
 volumes:
-  postgres_data:
+  content_data:
+  tester_data:
+  dind_storage:
+  shared_tmp:
+  keycloak_data:
+
+networks:
+  backend:
+    driver: bridge
