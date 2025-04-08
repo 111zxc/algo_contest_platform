@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.core.logger import logger
 from app.models.reaction import Reaction
 from app.schemas.reaction import ReactionCreate, ReactionType, TargetType
 
@@ -14,16 +15,25 @@ def create_reaction(db: Session, reaction_in: ReactionCreate) -> Reaction:
     db.add(reaction)
     db.commit()
     db.refresh(reaction)
+    logger.info(
+        f"Succesfully created reaction for {reaction.target_type} with id: {reaction.target_id} by {reaction.created_by}"
+    )
     return reaction
 
 
 def get_reaction(db: Session, reaction_id: str) -> Reaction | None:
-    return db.query(Reaction).filter(Reaction.id == reaction_id).first()
+    result = db.query(Reaction).filter(Reaction.id == reaction_id).first()
+    if result is None:
+        logger.info(f"Couldn't get reaction with id {reaction_id}")
+    else:
+        logger.info(f"Succesfully got reaction with id {reaction_id}")
+    return result
 
 
 def delete_reaction(db: Session, reaction: Reaction) -> None:
     db.delete(reaction)
     db.commit()
+    logger.info(f"Succesfully deleted reaction with id:{reaction.id}")
 
 
 def set_reaction(
@@ -69,7 +79,7 @@ def set_reaction(
 
     # Если реакции нет, создаем новую
     new_reaction = Reaction(
-        user_id=user_id,
+        created_by=user_id,
         target_id=target_id,
         target_type=target_type,
         reaction_type=reaction_type,
@@ -77,12 +87,16 @@ def set_reaction(
     db.add(new_reaction)
     db.commit()
     db.refresh(new_reaction)
+    logger.info(
+        f"Succesfully set new reaction for {target_type} with id: {target_id} by {user_id}"
+    )
     return new_reaction
 
 
 def list_reactions_for_target(
     db: Session, target_id: str, target_type: str
 ) -> list[Reaction]:
+    logger.info(f"Succesfully got all reactions for {target_type} with id: {target_id}")
     return (
         db.query(Reaction)
         .filter(Reaction.target_id == target_id, Reaction.target_type == target_type)
