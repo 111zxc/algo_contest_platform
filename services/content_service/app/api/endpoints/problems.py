@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import authorize, get_current_user, get_db
 from app.schemas.problem import ProblemCreate, ProblemRead
 from app.services.problem import (
     create_problem,
@@ -19,6 +19,15 @@ from app.services.tag import get_tag
 from app.services.user import get_user
 
 router = APIRouter(prefix="/problems", tags=["problems"])
+
+
+def get_problem_or_404(problem_id: str, db: Session = Depends(get_db)):
+    problem = get_problem(db, problem_id)
+    if not problem:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Задача не найдена"
+        )
+    return problem
 
 
 @router.post("/", response_model=ProblemRead)
@@ -40,145 +49,63 @@ def read_problem_endpoint(problem_id: str, db: Session = Depends(get_db)):
     Возвращает 200 и schemas.problem.ProblemRead
     или 404, если задача не существует
     """
-    problem = get_problem(db, problem_id)
-    if not problem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
-        )
-    return problem
+    return get_problem_or_404(problem_id, db)
 
 
 @router.put("/{problem_id}", response_model=ProblemRead)
+@authorize(required_role="admin", owner_param="problem", owner_field="created_by")
 def update_problem_endpoint(
-    problem_id: str,
     update_data: dict,
+    problem: object = Depends(get_problem_or_404),
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
-    """
-    Обновляет предоставленные в body json поля задачи
-    только admin или автор
-    """
-    current_keycloak_id = user_claims.get("sub")
-    roles = user_claims.get("realm_access", {}).get("roles", [])
-
-    problem = get_problem(db, problem_id)
-    if not problem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
-        )
-
-    if problem.created_by != current_keycloak_id and "admin" not in roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to update this problem",
-        )
-
-    problem = update_problem(db, problem, update_data)
-    return problem
+    updated_problem = update_problem(db, problem, update_data)
+    return updated_problem
 
 
 @router.delete("/{problem_id}", status_code=status.HTTP_204_NO_CONTENT)
+@authorize(required_role="admin", owner_param="problem", owner_field="created_by")
 def delete_problem_endpoint(
-    problem_id: str,
+    problem: object = Depends(get_problem_or_404),
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
-    """
-    удаляет задачу и отдает 204
-    404, если задачи не существует
-    только admin или автор
-    """
-    current_keycloak_id = user_claims.get("sub")
-    roles = user_claims.get("realm_access", {}).get("roles", [])
-
-    problem = get_problem(db, problem_id)
-    if not problem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
-        )
-
-    if problem.created_by != current_keycloak_id and "admin" not in roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to delete this problem",
-        )
-
     delete_problem(db, problem)
     return
 
 
 @router.post("/{problem_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@authorize(required_role="admin", owner_param="problem", owner_field="created_by")
 def attach_tag_to_problem(
-    problem_id: UUID,
     tag_id: UUID,
+    problem: object = Depends(get_problem_or_404),
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
-    """
-    прикрепляет тэг к задаче
-    404, если задачи или тега не существует
-    только admin или автор задачи
-    """
-    problem = get_problem(db, problem_id)
-    if not problem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
-        )
-
-    current_keycloak_id = user_claims.get("sub")
-    if problem.created_by != current_keycloak_id and "admin" not in user_claims.get(
-        "realm_access", {}
-    ).get("roles", []):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to modify this problem",
-        )
-
     tag = get_tag(db, tag_id)
     if not tag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
         )
-
     problem.tags.append(tag)
     db.commit()
     return None
 
 
 @router.delete("/{problem_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@authorize(required_role="admin", owner_param="problem", owner_field="created_by")
 def detach_tag_from_problem(
-    problem_id: UUID,
     tag_id: UUID,
+    problem: object = Depends(get_problem_or_404),
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
-    """
-    откепляет тег от задачи
-    404, если задачи или тег не найдены
-    только admin или автор задачи
-    """
-    problem = get_problem(db, problem_id)
-    if not problem:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Problem not found"
-        )
-
-    current_keycloak_id = user_claims.get("sub")
-    if problem.created_by != current_keycloak_id and "admin" not in user_claims.get(
-        "realm_access", {}
-    ).get("roles", []):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to modify this problem",
-        )
-
     tag = get_tag(db, tag_id)
     if not tag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
         )
-
     problem.tags.remove(tag)
     db.commit()
     return None

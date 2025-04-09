@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import authorize, get_current_user, get_db
 from app.schemas.comment import CommentCreate, CommentRead
 from app.services.comment import (
     create_comment,
@@ -13,6 +13,15 @@ from app.services.comment import (
 from app.services.user import get_user
 
 router = APIRouter(prefix="/comments", tags=["comments"])
+
+
+def get_comment_or_404(comment_id: str, db: Session = Depends(get_db)):
+    comment = get_comment(db, comment_id)
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Комментарий не найден"
+        )
+    return comment
 
 
 @router.post("/", response_model=CommentRead)
@@ -43,32 +52,19 @@ def read_comment_endpoint(comment_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/{comment_id}", response_model=CommentRead)
+@authorize(required_role="admin", owner_param="comment", owner_field="created_by")
 def update_comment_endpoint(
-    comment_id: str,
     update_data: dict,
+    comment: object = Depends(get_comment_or_404),
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
     """
-    Обновляет заданные в body json поля коммента
-    admin/author комментария
+    Обновляет заданные в body json поля комментария.
+    Доступно для admin или автора комментария.
     """
-    current_keycloak_id = user_claims.get("sub")
-    roles = user_claims.get("realm_access", {}).get("roles", [])
-
-    comment = get_comment(db, comment_id)
-    if not comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
-        )
-
-    if comment.user_id != current_keycloak_id and "admin" not in roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to update this comment",
-        )
-    comment = update_comment(db, comment, update_data)
-    return comment
+    updated_comment = update_comment(db, comment, update_data)
+    return updated_comment
 
 
 @router.get("/post/{post_id}", response_model=list[CommentRead])

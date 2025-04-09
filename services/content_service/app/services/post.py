@@ -25,7 +25,7 @@ def get_post(db: Session, post_id: str) -> Post | None:
         db.query(Post).filter(Post.id == post_id).options(joinedload(Post.tags)).first()
     )
     if result is None:
-        logger.info(f"Couldn't ge post with {post_id}")
+        logger.info(f"Couldn't get post with {post_id}")
     else:
         logger.info(f"Succesfully got post with id: {post_id}")
     return result
