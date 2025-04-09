@@ -1,0 +1,478 @@
+{
+  "version": 3,
+  "timeout": "3s",
+  "output_encoding": "json",
+  "name": "main-gateway",
+  "port": 8081,
+  "host": ["0.0.0.0"],
+  "endpoints": [
+    {
+      "endpoint": "/login",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/realms/myrealm/protocol/openid-connect/token",
+          "host": ["http://keycloak:8080"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/",
+          "host": ["http://tester_service:8001"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}",
+          "host": ["http://tester_service:8001"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}",
+          "host": ["http://tester_service:8001"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/solutions/{level1}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}",
+          "host": ["http://tester_service:8001"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/solutions/{level1}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}",
+          "host": ["http://tester_service:8001"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}/{level2}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}",
+          "host": ["http://tester_service:8001"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}/{level2}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}",
+          "host": ["http://tester_service:8001"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}/{level2}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}",
+          "host": ["http://tester_service:8001"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}/{level2}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}",
+          "host": ["http://tester_service:8001"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/solutions/{level1}/{level2}/{level3}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}/{level3}",
+          "host": ["http://tester_service:8001"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/solutions/{level1}/{level2}/{level3}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}/{level3}",
+          "host": ["http://tester_service:8001"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/solutions/{level1}/{level2}/{level3}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}/{level3}",
+          "host": ["http://tester_service:8001"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/solutions/{level1}/{level2}/{level3}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/solutions/{level1}/{level2}/{level3}",
+          "host": ["http://tester_service:8001"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    
+
+   
+    {
+      "endpoint": "/{base}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}",
+          "host": ["http://content_service:8000"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}",
+          "host": ["http://content_service:8000"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}",
+          "host": ["http://content_service:8000"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}",
+          "host": ["http://content_service:8000"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/{base}/{a}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}",
+          "host": ["http://content_service:8000"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/{base}/{a}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}",
+          "host": ["http://content_service:8000"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}",
+          "host": ["http://content_service:8000"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}",
+          "host": ["http://content_service:8000"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/{base}/{a}/{b}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}",
+          "host": ["http://content_service:8000"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}/{b}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}",
+          "host": ["http://content_service:8000"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}/{b}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}",
+          "host": ["http://content_service:8000"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}/{b}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}",
+          "host": ["http://content_service:8000"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/{base}/{a}/{b}/{c}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}/{c}",
+          "host": ["http://content_service:8000"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
+      "endpoint": "/{base}/{a}/{b}/{c}",
+      "method": "PUT",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}/{c}",
+          "host": ["http://content_service:8000"],
+          "method": "PUT",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}/{b}/{c}",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}/{c}",
+          "host": ["http://content_service:8000"],
+          "method": "POST",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+    {
+      "endpoint": "/{base}/{a}/{b}/{c}",
+      "method": "DELETE",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/{base}/{a}/{b}/{c}",
+          "host": ["http://content_service:8000"],
+          "method": "DELETE",
+          "disable_host_sanitize": true
+        }
+      ]
+    }
+
+
+  ]
+}

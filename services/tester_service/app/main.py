@@ -1,4 +1,3 @@
-# app/main.py
 import time
 
 import docker
