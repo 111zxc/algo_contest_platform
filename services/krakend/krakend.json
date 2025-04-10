@@ -258,14 +258,14 @@
       ]
     },
     {
-      "endpoint": "/{base}",
+      "endpoint": "/{base}/",
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
-          "url_pattern": "/{base}",
+          "url_pattern": "/{base}/",
           "host": ["http://content_service:8000"],
           "method": "POST",
           "disable_host_sanitize": true
@@ -280,7 +280,7 @@
       "headers_to_pass": ["*"],
       "backend": [
         {
-          "url_pattern": "/{base}",
+          "url_pattern": "/{base}/",
           "host": ["http://content_service:8000"],
           "method": "DELETE",
           "disable_host_sanitize": true
@@ -474,5 +474,33 @@
     }
 
 
-  ]
+  ],
+  "extra_config": {
+    "security/cors": {
+      "allow_origins": [
+        "*"
+      ],
+      "allow_methods": [
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "expose_headers": [
+        "Content-Length",
+        "Content-Type"
+      ],
+      "allow_headers": [
+        "Accept-Language",
+        "Content-Type",
+        "Access-Control-Allow-Origin",
+        "Authorization"
+      ],
+      "max_age": "12h",
+      "allow_credentials": false,
+      "debug": false
+    }
+  }
 }
