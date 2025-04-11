@@ -1,14 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import authorize, get_current_user, get_db
-from app.schemas.post import PostCreate, PostRead
+from app.schemas.post import PostCreate, PostRead, PostReadExtended
 from app.services.post import (
     create_post,
     delete_post,
     get_post,
+    list_enriched_posts_by_problem,
     list_posts,
     list_posts_by_problem,
     list_posts_by_tag,
@@ -159,3 +160,26 @@ def list_posts_by_tag_endpoint(tag_id: str, db: Session = Depends(get_db)):
     """
     posts = list_posts_by_tag(db, tag_id)
     return posts
+
+@router.get("/by-problem/enriched/{problem_id}", response_model=list[PostReadExtended])
+def list_enriched_posts_by_problem_endpoint(
+    problem_id: str,
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    limit: int = Query(10, ge=1, description="Максимальное число постов на страницу"),
+    db: Session = Depends(get_db)
+):
+    """
+    Возвращает список постов для задачи problem_id с добавленным полем author_display_name.
+    Реализована пагинация через параметры offset и limit.
+
+    Args:
+        problem_id (str): Идентификатор задачи.
+        offset (int): Смещение для выборки (по умолчанию 0).
+        limit (int): Максимальное количество возвращаемых записей (по умолчанию 10).
+        db (Session): Сессия для работы с БД.
+
+    Returns:
+        List[PostReadExtended]: Обогащенный список постов.
+    """
+    enriched_posts = list_enriched_posts_by_problem(db, problem_id, offset, limit)
+    return enriched_posts

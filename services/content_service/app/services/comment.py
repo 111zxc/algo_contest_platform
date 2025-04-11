@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.logger import logger
 from app.models.comment import Comment
 from app.schemas.comment import CommentCreate
+from app.models.user import User
 
 
 def create_comment(db: Session, comment_in: CommentCreate, user_id: str) -> Comment:
@@ -48,3 +49,32 @@ def list_comments_by_post(db: Session, post_id: str) -> list[Comment]:
 def list_comments_by_user(db: Session, keycloak_id: str) -> list[Comment]:
     logger.info(f"Succesfully got all comments to user {keycloak_id}")
     return db.query(Comment).filter(Comment.created_by == keycloak_id).all()
+
+
+def list_enriched_comments_by_post(db: Session, post_id: str, offset: int = 0, limit: int = 10) -> list[Comment]:
+    """
+    Возвращает список комментариев для поста post_id, обогащенных полем author_display_name.
+    Пагинация задается через offset и limit.
+    
+    Args:
+        db (Session): Сессия для работы с БД.
+        post_id (str): Идентификатор поста.
+        offset (int): Смещение для пагинации.
+        limit (int): Максимальное число записей.
+    
+    Returns:
+        List[Comment]: Список комментариев, каждый с добавленным полем author_display_name.
+    """
+    results = (
+        db.query(Comment, User.display_name)
+          .join(User, Comment.created_by == User.keycloak_id)
+          .filter(Comment.post_id == post_id)
+          .offset(offset)
+          .limit(limit)
+          .all()
+    )
+    enriched = []
+    for comment, display_name in results:
+        setattr(comment, "author_display_name", display_name)
+        enriched.append(comment)
+    return enriched

@@ -7,6 +7,7 @@ from app.schemas.tag import TagRead
 
 
 class PostBase(BaseModel):
+    title: str
     content: str
     language: str | None = None
     status: str | None = None
@@ -18,6 +19,7 @@ class PostCreate(PostBase):
 
 class PostRead(PostBase):
     id: UUID
+    problem_id: UUID
     created_at: datetime
     updated_at: datetime | None = None
     tags: list[TagRead]
@@ -25,3 +27,9 @@ class PostRead(PostBase):
 
     class Config:
         orm_mode = True
+
+class PostReadExtended(PostRead):
+    """
+    Расширенная схема поста, включающая display_name автора.
+    """
+    author_display_name: str | None = None

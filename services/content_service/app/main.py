@@ -9,10 +9,8 @@ from app.api.endpoints import (
     tags,
     users,
 )
-from app.core.middleware import LogRequestMiddleware
 
 app = FastAPI(title="Content Service")
-app.add_middleware(LogRequestMiddleware)
 
 app.include_router(users.router)
 app.include_router(problems.router)

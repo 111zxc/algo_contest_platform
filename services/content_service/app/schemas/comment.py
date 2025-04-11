@@ -15,9 +15,13 @@ class CommentCreate(CommentBase):
 
 class CommentRead(CommentBase):
     id: UUID
+    post_id: UUID
     created_at: datetime
     updated_at: datetime | None = None
     created_by: str
 
     class Config:
         orm_mode = True
+
+class CommentReadExtended(CommentRead):
+    author_display_name: str | None = None

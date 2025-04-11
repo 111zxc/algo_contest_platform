@@ -44,3 +44,6 @@ class ProblemRead(ProblemBase):
 
     class Config:
         orm_mode = True
+
+class ProblemReadExtended(ProblemRead):
+    author_display_name: str | None = None

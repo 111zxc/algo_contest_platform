@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.logger import logger
 from app.models.post import Post
 from app.schemas.post import PostCreate
+from app.models.user import User
 
 
 def create_post(db: Session, post_in: PostCreate, user_id: str) -> Post:
     post = Post(
         problem_id=post_in.problem_id,
         created_by=user_id,
+        title=post_in.title,
         content=post_in.content,
         language=post_in.language,
         status=post_in.status,
@@ -79,3 +81,32 @@ def list_posts_by_tag(db: Session, tag_id: str) -> list[Post]:
         .filter(Post.tags.any(id=tag_id))
         .all()
     )
+
+def list_enriched_posts_by_problem(db: Session, problem_id: str, offset: int = 0, limit: int = 10) -> list[Post]:
+    """
+    Возвращает список постов для задачи problem_id с дополнением поля author_display_name,
+    используя пагинацию (offset и limit).
+
+    Args:
+        db (Session): Сессия для работы с БД.
+        problem_id (str): Идентификатор задачи.
+        offset (int): Смещение (начинается с 0).
+        limit (int): Максимальное количество записей.
+
+    Returns:
+        List[Post]: Список постов, каждому из которых добавлено свойство author_display_name.
+    """
+    # Выполняем join Post и User по полю Post.user_id == User.keycloak_id
+    results = (
+        db.query(Post, User.display_name)
+          .join(User, Post.created_by == User.keycloak_id)
+          .filter(Post.problem_id == problem_id)
+          .offset(offset)
+          .limit(limit)
+          .all()
+    )
+    enriched = []
+    for post, display_name in results:
+        setattr(post, "author_display_name", display_name)
+        enriched.append(post)
+    return enriched

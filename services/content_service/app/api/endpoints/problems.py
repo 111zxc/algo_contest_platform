@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import authorize, get_current_user, get_db
-from app.schemas.problem import ProblemCreate, ProblemRead
+from app.schemas.problem import ProblemCreate, ProblemRead, ProblemReadExtended
 from app.services.problem import (
     create_problem,
     delete_problem,
@@ -14,6 +14,7 @@ from app.services.problem import (
     list_problems_by_tag,
     list_problems_by_user,
     update_problem,
+    list_enriched_problems
 )
 from app.services.tag import get_tag
 from app.services.user import get_user
@@ -41,6 +42,26 @@ def create_problem_endpoint(
     """
     problem = create_problem(db, problem_in, creator_id=user_claims.get("sub"))
     return problem
+
+
+@router.get("/enriched", response_model=list[ProblemReadExtended])
+def list_enriched_problems_endpoint(
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    limit: int = Query(10, ge=1, description="Количество задач на страницу"),
+    db: Session = Depends(get_db)
+):
+    """
+    Возвращает список задач с добавленным полем author_display_name (display_name автора) с пагинацией.
+    
+    Query Parameters:
+        - offset: смещение (начальное значение 0)
+        - limit: максимальное количество записей (по умолчанию 10)
+    
+    Returns:
+        List[ProblemReadExtended]: Обогащенный список задач.
+    """
+    enriched = list_enriched_problems(db, offset, limit)
+    return enriched
 
 
 @router.get("/{problem_id}", response_model=ProblemRead)

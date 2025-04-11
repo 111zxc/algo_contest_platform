@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import authorize, get_current_user, get_db
-from app.schemas.comment import CommentCreate, CommentRead
+from app.schemas.comment import CommentCreate, CommentRead, CommentReadExtended
 from app.services.comment import (
     create_comment,
     get_comment,
     list_comments_by_post,
     list_comments_by_user,
+    list_enriched_comments_by_post,
     update_comment,
 )
 from app.services.user import get_user
@@ -91,3 +92,31 @@ def list_comments_by_user_endpoint(user_id: str, db: Session = Depends(get_db)):
         )
     comments = list_comments_by_user(db, local_user.keycloak_id)
     return comments
+
+
+@router.get("/post/enriched/{post_id}", response_model=list[CommentReadExtended])
+def list_enriched_comments_by_post_endpoint(
+    post_id: str,
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    limit: int = Query(
+        10, ge=1, description="Максимальное число комментариев на страницу"
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает обогащённый список комментариев для поста с заданным post_id.
+
+    Каждый комментарий содержит дополнительное поле author_display_name, полученное из таблицы пользователей.
+    Пагинация реализована через параметры offset и limit.
+
+    Args:
+        post_id (str): Идентификатор поста.
+        offset (int): Смещение для пагинации (по умолчанию 0).
+        limit (int): Максимальное число возвращаемых записей (по умолчанию 10).
+        db (Session): Сессия для работы с БД.
+
+    Returns:
+        List[CommentReadExtended]: Список обогащённых комментариев.
+    """
+    enriched_comments = list_enriched_comments_by_post(db, post_id, offset, limit)
+    return enriched_comments

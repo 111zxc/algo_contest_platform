@@ -5,10 +5,8 @@ from fastapi import FastAPI
 
 from app.api.endpoints import solutions
 from app.core.config import settings
-from app.core.middleware import LogRequestMiddleware
 
 app = FastAPI(title=settings.PROJECT_NAME)
-app.add_middleware(LogRequestMiddleware)
 
 app.include_router(solutions.router)
 

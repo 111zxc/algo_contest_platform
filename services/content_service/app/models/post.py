@@ -15,6 +15,7 @@ class Post(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     problem_id = Column(UUID(as_uuid=True), ForeignKey("problems.id"), nullable=False)
     created_by = Column(String, ForeignKey("users.keycloak_id"), nullable=False)
+    title = Column(String)
     content = Column(Text, nullable=False)
     language = Column(String, nullable=True)
     status = Column(String, nullable=True)

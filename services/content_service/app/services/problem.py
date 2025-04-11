@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.logger import logger
 from app.models.problem import Problem
 from app.schemas.problem import ProblemCreate
+from app.models.user import User
 
 
 def create_problem(db: Session, problem_in: ProblemCreate, creator_id: str) -> Problem:
@@ -91,3 +92,32 @@ def list_problems_by_difficulty(db: Session, difficulty: str) -> list[Problem]:
         .filter(Problem.difficulty == difficulty)
         .all()
     )
+
+def list_enriched_problems(db: Session, offset: int = 0, limit: int = 10) -> list[Problem]:
+    """
+    Возвращает список задач с добавленным полем display_name автора (author_display_name)
+    с использованием пагинации (offset и limit).
+    
+    Выполняется join таблицы Problem с таблицей User по полю created_by (которое содержит keycloak_id).
+    
+    Args:
+        db (Session): Сессия БД.
+        offset (int): Смещение.
+        limit (int): Ограничение по количеству записей.
+        
+    Returns:
+        List[Problem]: Список задач, где каждому объекту задачи добавлено свойство author_display_name.
+    """
+    results = (
+        db.query(Problem, User.display_name)
+          .join(User, Problem.created_by == User.keycloak_id)
+          .offset(offset)
+          .limit(limit)
+          .all()
+    )
+    # Для каждого кортежа (problem, display_name) присваиваем новое свойство.
+    enriched = []
+    for problem, display_name in results:
+        setattr(problem, "author_display_name", display_name)
+        enriched.append(problem)
+    return enriched
