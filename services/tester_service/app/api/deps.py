@@ -1,29 +1,28 @@
 from functools import wraps
-from typing import Generator
 
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 
-from app.core.database import SessionLocal
 from app.core.security import keycloak_service
 
 bearer_scheme = HTTPBearer()
-
-
-def get_db() -> Generator:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def get_current_user(
     creds: HTTPAuthorizationCredentials = Security(bearer_scheme),
 ) -> dict:
     """
-    Валидирует токен, возвращает payload (claims).
+    Валидирует токен и возвращает payload (claims)
+
+    Args:
+        creds: HTTPAuthorizationCredentials - данные авторизации.
+
+    Returns:
+        dict: словарь с payload токена.
+
+    Raises:
+        HTTPException: 401, если токен неверный.
     """
     token = creds.credentials
     try:
@@ -39,23 +38,17 @@ def get_current_user(
 
 def authorize(required_role: str, owner_param: str = None, owner_field: str = None):
     """
-    Универсальный декоратор для авторизации, объединяющий проверки:
+    Универсальный декоратор для авторизации
 
     1. Если у пользователя есть требуемая роль, выполнение разрешается.
     2. Если требуемой роли нет, но указан параметр владельца, проверяется, соответствует ли он текущему пользователю.
 
-    Параметры:
-      - required_role: роль, необходимая для доступа (например, "admin").
-      - owner_param: имя параметра в функции (например, 'keycloak_id' или 'problem'),
-                     который содержит либо идентификатор, либо объект ресурса.
-      - owner_field: если owner_param – это объект, с помощью этого параметра извлекается
-                     идентификатор владельца (например, 'created_by'). Если None, owner_param считается идентификатором напрямую.
-
-    Примеры использования:
-      - Только роль: @authorize(required_role="admin")
-      - Роль или сам пользователь: @authorize(required_role="admin", owner_param="keycloak_id")
-      - Роль или владелец объекта (например, автор задачи хранится в поле created_by):
-            @authorize(required_role="admin", owner_param="problem", owner_field="created_by")
+    Args:
+        required_role: роль, необходимая для доступа (например, "admin").
+        owner_param: имя параметра в функции (например, 'keycloak_id' или 'problem'), ..
+            .. который содержит либо идентификатор, либо объект ресурса.
+        owner_field: если owner_param – это объект, с помощью этого параметра извлекается ..
+            .. идентификатор владельца (например, 'created_by'). Если None, owner_param считается идентификатором напрямую.
     """
 
     def decorator(func):
@@ -65,7 +58,7 @@ def authorize(required_role: str, owner_param: str = None, owner_field: str = No
             if not user_claims:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Нет данных о пользователе",
+                    detail="No user info",
                 )
             current_user_id = user_claims.get("sub")
             roles = user_claims.get("realm_access", {}).get("roles", [])
@@ -80,9 +73,9 @@ def authorize(required_role: str, owner_param: str = None, owner_field: str = No
                 if target is None:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Параметр '{owner_param}' не передан для проверки прав",
+                        detail=f"Variable '{owner_param}' was not given",
                     )
-                # Если указано поле владельца, извлекаем его из объекта
+
                 if owner_field:
                     owner_value = getattr(target, owner_field, None)
                 else:
@@ -93,7 +86,7 @@ def authorize(required_role: str, owner_param: str = None, owner_field: str = No
 
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Недостаточно прав для выполнения этого действия",
+                detail="Not enough rights",
             )
 
         return wrapper

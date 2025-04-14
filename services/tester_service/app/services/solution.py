@@ -1,4 +1,5 @@
 import requests
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -9,9 +10,17 @@ from app.services.analytics import compute_performance_percentile
 from app.services.docker_runner import run_solution_in_container
 
 
-def create_solution(db, solution_in: SolutionCreate, user_id: str) -> Solution:
+def create_solution(db: Session, solution_in: SolutionCreate, user_id: str) -> Solution:
     """
-    Создает новое решение со статусом PENDING и сохраняет его в БД.
+    Создает и  сохраняет в БД запись решения со статусом pending
+
+    Args:
+        db: объект сессии БД,
+        solution_in (SolutionCreate): заполненная схема для создания решения,
+        user_id (str): str(user.keycloak_id)
+
+    Returns:
+        Solution: orm объект решения
     """
     solution = Solution(
         created_by=user_id,
@@ -24,52 +33,88 @@ def create_solution(db, solution_in: SolutionCreate, user_id: str) -> Solution:
     db.commit()
     db.refresh(solution)
     logger.info(
-        f"Succesfully created solution {solution.id} to problem with id: {solution_in.problem_id} by user with id: {user_id}"
+        f"Successfully created solution {solution.id} for problem with id: {solution_in.problem_id} by user with id: {user_id}"
     )
     return solution
 
 
-def get_solution(db, solution_id: str) -> Solution | None:
+def get_solution(db: Session, solution_id: str) -> Solution | None:
     """
-    Возвращает решение по его идентификатору или None, если не найдено.
+    Возвращает orm объект решения по его id
+
+    Args:
+        db (Session): объект сессии БД,
+        solution_id (str): id решения,
+
+    Returns:
+        Solution | None: orm объект решения или None
     """
-    result = db.query(Solution).filter(Solution.id == solution_id).first()
-    if result is None:
-        logger.info(f"Couldn't get solution by id: {solution_id}")
+    solution = db.query(Solution).filter(Solution.id == solution_id).first()
+    if not solution:
+        logger.warning(f"Couldn't get solution by id: {solution_id}")
     else:
         logger.info(f"Succesfully got solution with id {solution_id}")
-    return result
+    return solution
 
 
-def update_solution_status(db, solution_id: str, result: dict) -> Solution | None:
+def update_solution_status(
+    db: Session, solution_id: str, result: dict
+) -> Solution | None:
     """
-    Обновляет статус решения, время, память и сравнительную статистику в БД.
+    Обновляет запись решения после его обработки
+
+    Args:
+        db (Session): объект сессии БД,
+        solution_id (str): id решения,
+        result (dict): словарь с результатами обработки решения {status, time_used, memory_used, faster_than}
+
+    Returns:
+        Solution | None: orm объект обновленного решения
     """
     solution = get_solution(db, solution_id)
     if solution is None:
         return None
+
     solution.status = result.get("status", SolutionStatus.RE)
     solution.time_used = result.get("time_used")
     solution.memory_used = result.get("memory_used")
     solution.faster_than = result.get("faster_than")
-    db.commit()
-    db.refresh(solution)
-    logger.info(f"Succesfully updated solution status with id {solution_id}")
+
+    try:
+        db.commit()
+        db.refresh(solution)
+        logger.info(f"Succesfully updated solution status with id {solution_id}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating solution status for {solution_id}: {str(e)}")
+        return None
+
     return solution
 
 
-def process_solution(solution_id: str):
+def process_solution(solution_id: str) -> dict:
     """
-    Фоновая функция для обработки решения:
-    1. Получает данные задачи с content_service (тесткейсы, лимиты).
-    2. Запускает выполнение решения для каждого тесткейса через run_solution_in_container.
-    3. Композитно определяет общий статус.
-    4. Обновляет запись решения в БД.
+    Background функция для обработки пользовательского решения:
+    1. Получает тест-кейсы, лимит задачи от solution.problem_id
+    2. Запускает решение на тест-кейсах задачи через docker_runner/run_solution_in_container
+    3. Выставляет вердикт решению
+    4. Обновляет запись решения
+
+    Args:
+        db (Session): сессия БД,
+        solution_id (str): id решения,
+
+    Returns:
+        dict: результат обработки решения {status, faster_than, memory_used, time_used}
     """
     db = SessionLocal()
     try:
         solution = get_solution(db, solution_id)
         if not solution:
+            update_solution_status(
+                db, solution_id, {"status": SolutionStatus.RE, "time_used": 0}
+            )
+            logger.error(f"Couldn't process solution {solution_id}: solution not found")
             return {"error": "Solution not found"}
 
         problem_url = f"{settings.CONTENT_SERVICE_URL}/problems/{solution.problem_id}"
@@ -78,7 +123,9 @@ def process_solution(solution_id: str):
             update_solution_status(
                 db, solution_id, {"status": SolutionStatus.RE, "time_used": 0}
             )
-            logger.info(f"Couldn't process solution {solution_id}: Problem not found")
+            logger.error(
+                f"Couldn't process solution {solution_id}: Problem not found at {problem_url}"
+            )
             return {"error": "Problem not found"}
 
         problem_data = response.json()
@@ -91,16 +138,31 @@ def process_solution(solution_id: str):
                     "expected_output": tc.get("output_data", ""),
                 }
             )
-        time_limit = problem_data.get("time_limit", 2000) / 1000.0
+        time_limit = problem_data.get("time_limit", 10)
+        memory_limit = problem_data.get("memory_limit", 128)
 
         result = run_solution_in_container(
-            solution.code, solution.language, test_cases, time_limit
+            solution.code, solution.language, test_cases, time_limit, memory_limit
         )
         logger.info(f"Started processing solution {solution_id}'s code")
 
         if result.get("status") == "AC" and result.get("results"):
-            current_time = result["results"][0]["time_used"]
+            mark_url = (
+                f"{settings.CONTENT_SERVICE_URL}/problems/solved/{solution.problem_id}"
+            )
+            params = {"user_id": solution.created_by}
+            try:
+                resp = requests.post(mark_url, params=params)
+                if resp.status_code != 200:
+                    logger.warning(
+                        f"Marking problem {solution.problem_id} as solved failed for user {solution.created_by}"
+                    )
+            except Exception as e:
+                logger.error(
+                    f"POST failed for marking problem {solution.problem_id} as solved for user {solution.created_by}: {str(e)}"
+                )
 
+            current_time = result["results"][0]["time_used"]
             percentile = compute_performance_percentile(
                 db, solution.problem_id, current_time
             )
@@ -108,32 +170,55 @@ def process_solution(solution_id: str):
         else:
             result["faster_than"] = None
 
-        update_solution_status(db, solution_id, result)
-        logger.info(
-            f"Succesfully updated solution {solution_id}'s status to {result.get("status")}"
-        )
+        updated_solution = update_solution_status(db, solution_id, result)
+        if updated_solution:
+            logger.info(
+                f"Succesfully updated solution {solution_id}'s status to {result.get('status')}"
+            )
+        else:
+            logger.error(f"Failed to update solution status for {solution_id}")
         return result
+
     finally:
         db.close()
 
 
-def list_solutions_by_problem(db, problem_id: str) -> list[Solution]:
+def list_solutions_by_problem(db: Session, problem_id: str) -> list[Solution]:
     """
-    Возвращает список всех решений для заданной задачи.
+    Возвращает список всех решений к задаче problem_id
+
+    Args:
+        db (Session): объект БД,
+        problem_id (str): id задачи
+
+    Returns:
+        list[Solution]: список пользовательских решений к задаче
     """
-    logger.info(f"Got all solutions to problem {problem_id}")
-    return db.query(Solution).filter(Solution.problem_id == problem_id).all()
+    solutions = db.query(Solution).filter(Solution.problem_id == problem_id).all()
+    logger.info(f"Got all {len(solutions)} solutions for problem {problem_id}")
+    return solutions
 
 
 def list_solutions_by_problem_and_user(
-    db, problem_id: str, keycloak_id: str
+    db, problem_id: str, user_id: str
 ) -> list[Solution]:
     """
-    Возвращает список решений для заданной задачи, оставленных пользователем с указанным keycloak_id.
+    Возвращает список всех решений пользователя user_id к задаче problem_id
+
+    Args:
+        db (Session): объект БД,
+        problem_id (str): id проблемы,
+        user_id (str): id пользователя
+
+    Returns:
+        list[Solution]: список решений пользователя user_id к задаче problem_id
     """
-    logger.info(f"Got all solutions to problem {problem_id} from user {keycloak_id}")
-    return (
+    solutions = (
         db.query(Solution)
-        .filter(Solution.problem_id == problem_id, Solution.user_id == keycloak_id)
+        .filter(Solution.problem_id == problem_id, Solution.created_by == user_id)
         .all()
     )
+    logger.info(
+        f"Got all {len(solutions)} solutions to problem {problem_id} from user {user_id}"
+    )
+    return solutions
