@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.models.base import Base
+from app.models.solved_problems import solved_problems
 from app.models.tag import problem_tags
 
 
@@ -31,3 +32,7 @@ class Problem(Base):
     memory_limit = Column(Integer, nullable=True)
 
     tags = relationship("Tag", secondary=problem_tags, back_populates="problems")
+
+    solved_by = relationship(
+        "User", secondary=solved_problems, back_populates="solved_problems"
+    )

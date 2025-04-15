@@ -26,3 +26,8 @@ class UserRead(UserBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
+
+
+class UserReadExtended(UserRead):
+    rating: int | None = None

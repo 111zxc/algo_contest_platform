@@ -11,6 +11,7 @@ from app.models.base import Base
 class TargetType(str, enum.Enum):
     post = "post"
     comment = "comment"
+    problem = "problem"
 
 
 class ReactionType(str, enum.Enum):

@@ -22,6 +22,13 @@ class CommentRead(CommentBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
+
 
 class CommentReadExtended(CommentRead):
     author_display_name: str | None = None
+    reaction_balance: int | None = 0
+
+
+class CommentReadWithReaction(CommentReadExtended):
+    user_reaction: str | None = None

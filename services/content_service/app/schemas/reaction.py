@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class TargetType(str, Enum):
     post = "post"
     comment = "comment"
+    problem = "problem"
 
 
 class ReactionType(str, Enum):
@@ -32,6 +33,7 @@ class ReactionRead(ReactionBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 
 class ReactionListResponse(BaseModel):

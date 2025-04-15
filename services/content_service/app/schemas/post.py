@@ -27,9 +27,13 @@ class PostRead(PostBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
+
 
 class PostReadExtended(PostRead):
-    """
-    Расширенная схема поста, включающая display_name автора.
-    """
     author_display_name: str | None = None
+    reaction_balance: int | None = 0
+
+
+class PostReadWithReaction(PostReadExtended):
+    user_reaction: str | None = None

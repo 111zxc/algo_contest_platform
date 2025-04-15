@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import authorize, get_current_user, get_db
+from app.api.deps import authorize, get_current_user
+from app.core.database import get_db
 from app.schemas.tag import TagCreate, TagRead
 from app.services.tag import create_tag, delete_tag, get_tag, get_tags, update_tag
 
@@ -14,19 +15,37 @@ def create_tag_endpoint(
     tag_in: TagCreate,
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
-):
+) -> TagRead:
     """
-    Создает новый тег admin only
+    Создает и возвращает новый тег
+    Admin only
+
+    Args:
+        tag_in (TagCreate): объект с данными для создания тега
+        db (Session): объект сессии БД
+        user_claims (dict): данные авторизации пользователя, извлеченные из токена
+
+    Returns:
+        TagRead - созданный тег
     """
     tag = create_tag(db, tag_in)
     return tag
 
 
 @router.get("/{tag_id}", response_model=TagRead)
-def read_tag_endpoint(tag_id: str, db: Session = Depends(get_db)):
+def read_tag_endpoint(tag_id: str, db: Session = Depends(get_db)) -> TagRead:
     """
-    Возвращает тег по его id
-    404, если тега не существует
+    Возвращает тег по его идентификатору
+
+    Args:
+        tag_id (str): идентификатор тега
+        db (Session): объект сессии БД
+
+    Returns:
+        TagRead - найденный тег
+
+    Raises:
+        HTTPException 404 - если тег не найден
     """
     tag = get_tag(db, tag_id)
     if not tag:
@@ -43,7 +62,22 @@ def update_tag_endpoint(
     update_data: dict,
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
-):
+) -> TagRead:
+    """
+    Обновляет данные тега и возвращает обновленный тег
+
+    Args:
+        tag_id (str): идентификатор тега, который требуется обновить
+        update_data (dict): словарь с данными для обновления тега
+        db (Session): объект сессии БД
+        user_claims (dict): данные авторизации пользователя, извлеченные из токена
+
+    Returns:
+        TagRead - обновленный тег
+
+    Raises:
+        HTTPException 404 - если тег не найден
+    """
     tag = get_tag(db, tag_id)
     if not tag:
         raise HTTPException(
@@ -59,7 +93,21 @@ def delete_tag_endpoint(
     tag_id: str,
     db: Session = Depends(get_db),
     user_claims: dict = Depends(get_current_user),
-):
+) -> None:
+    """
+    Удаляет тег по его идентификатору.
+
+    Args:
+        tag_id (str): идентификатор тега для удаления
+        db (Session): объект сессии БД
+        user_claims (dict): данные авторизации пользователя, извлеченные из токена
+
+    Returns:
+        None - функция ничего не возвращает
+
+    Raises:
+        HTTPException 404 - если тег не найден
+    """
     tag = get_tag(db, tag_id)
     if not tag:
         raise HTTPException(
@@ -70,9 +118,15 @@ def delete_tag_endpoint(
 
 
 @router.get("/", response_model=list[TagRead])
-def list_tags_endpoint(db: Session = Depends(get_db)):
+def list_tags_endpoint(db: Session = Depends(get_db)) -> list[TagRead]:
     """
-    Возвращает list[TagRead] всех тэгов без авторизации
+    Возвращает список всех тегов.
+
+    Args:
+        db (Session): объект сессии БД
+
+    Returns:
+        list[TagRead] - список всех тегов
     """
     tags = get_tags(db)
     return tags

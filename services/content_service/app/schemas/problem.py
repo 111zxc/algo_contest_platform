@@ -44,6 +44,13 @@ class ProblemRead(ProblemBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
+
 
 class ProblemReadExtended(ProblemRead):
     author_display_name: str | None = None
+    reaction_balance: int | None = 0
+
+
+class ProblemReadWithReaction(ProblemReadExtended):
+    user_reaction: str | None = None
