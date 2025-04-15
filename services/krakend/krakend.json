@@ -11,6 +11,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "backend": [
         {
           "url_pattern": "/realms/myrealm/protocol/openid-connect/token",
@@ -26,6 +27,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -41,6 +43,7 @@
       "endpoint": "/solutions/{level1}",
       "method": "GET",
       "output_encoding": "no-op",
+      "input_query_strings": ["*"],
       "input_headers": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
@@ -57,6 +60,7 @@
       "endpoint": "/solutions/{level1}",
       "method": "POST",
       "output_encoding": "no-op",
+      "input_query_strings": ["*"],
       "input_headers": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
@@ -73,6 +77,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -88,6 +93,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -104,6 +110,7 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -120,6 +127,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -136,6 +144,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -152,6 +161,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -168,6 +178,7 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -183,6 +194,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -198,6 +210,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -213,6 +226,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -232,6 +246,7 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -247,6 +262,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -262,6 +278,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -277,6 +294,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -293,6 +311,7 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -309,6 +328,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -324,6 +344,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -339,6 +360,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -355,6 +377,7 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -370,6 +393,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -385,6 +409,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -400,6 +425,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -416,6 +442,7 @@
       "method": "GET",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -432,6 +459,7 @@
       "method": "PUT",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -447,6 +475,7 @@
       "method": "POST",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {
@@ -462,6 +491,7 @@
       "method": "DELETE",
       "output_encoding": "no-op",
       "input_headers": ["*"],
+      "input_query_strings": ["*"],
       "headers_to_pass": ["*"],
       "backend": [
         {

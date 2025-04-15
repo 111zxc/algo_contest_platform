@@ -12,7 +12,7 @@ def compute_performance_percentile(
     Если других одобренных решений нет, возвращает 100.0
 
     Args:
-        db (Session): объект БД
+        db (Session): объект сессии БД
         problem_id (str): id задачи
         current_time (float): время выполнения данного решения
 
