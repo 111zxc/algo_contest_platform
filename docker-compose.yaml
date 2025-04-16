@@ -123,7 +123,18 @@ services:
     command: [ "run", "-dc", "/etc/krakend/krakend.json" ]
 
   # --------------------------------------------------------------------------
-
+  # FRONTEND
+  # --------------------------------------------------------------------------
+  frontend:
+    build: ./services/frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    environment:
+      GATEWAY_URL: http://krakend:8081
+    networks:
+      - backend
+  # --------------------------------------------------------------------------
 volumes:
   content_data:
   tester_data:
