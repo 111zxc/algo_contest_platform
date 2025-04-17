@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from app.api.endpoints import (
+    blog_posts,
     comments,
     posts,
     problems,
@@ -21,6 +22,7 @@ app.include_router(comments.router)
 app.include_router(reactions.router)
 app.include_router(tags.router)
 app.include_router(register.router)
+app.include_router(blog_posts.router)
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8001, reload=True)

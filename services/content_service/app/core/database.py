@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
-from app.models import comment, post, problem, reaction, solved_problems, tag, user
+from app.models import comment, post, problem, reaction, solved_problems, tag, user, blog_post
 from app.models.base import Base
 
 engine = create_engine(settings.DATABASE_URL, future=True, echo=False)
