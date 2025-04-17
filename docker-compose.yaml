@@ -90,13 +90,13 @@ services:
     container_name: dind
     privileged: true
     environment:
-      DOCKER_TLS_CERTDIR: ""   # отключаем TLS
+      DOCKER_TLS_CERTDIR: ""
     command: ["dockerd-entrypoint.sh", "--host=tcp://0.0.0.0:2375"]
     ports:
       - "2375:2375"
     volumes:
       - dind_storage:/var/lib/docker
-      - shared_tmp:/shared_tmp    # добавляем этот volume!
+      - shared_tmp:/shared_tmp
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2375/version"]
       interval: 5s
