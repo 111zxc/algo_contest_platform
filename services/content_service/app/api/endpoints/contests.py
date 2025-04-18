@@ -9,7 +9,7 @@ from app.schemas.contest import ContestCreate, ContestJoin, ContestRead
 from app.schemas.problem import ProblemRead
 from app.schemas.user import UserRead
 from app.services.contest import (
-    add_user_to_contest,
+    add_user_to_contest_by_username,
     create_contest,
     delete_contest,
     get_contest,
@@ -41,10 +41,8 @@ def list_my_participate_contests_endpoint(
     user_claims: dict = Depends(get_current_user),
     db=Depends(get_db),
 ):
-    """
-    Список контестов, в которые вошёл текущий пользователь.
-    """
     return list_user_contests(db, user_claims["sub"])
+
 
 @router.post("/", response_model=ContestRead, status_code=status.HTTP_201_CREATED)
 def create_contest_endpoint(
@@ -104,25 +102,19 @@ def join_contest_endpoint(
     db=Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
-    """
-    Пользователь вступает в публичный контест.
-    """
     join_public_contest(db, contest_id, user_claims["sub"])
 
 
 @router.post("/{contest_id}/participants", status_code=status.HTTP_204_NO_CONTENT)
 @authorize(required_role="admin", owner_param="contest", owner_field="created_by")
 def add_participant_endpoint(
+    payload: ContestJoin,
     contest=Depends(get_contest_or_404),
-    payload: ContestJoin = Depends(),
     db=Depends(get_db),
     user_claims: dict = Depends(get_current_user),
 ):
-    """
-    Владелец контеста добавляет любого пользователя по keycloak_id.
-    """
-    add_user_to_contest(
-        db, str(contest.id), payload.user_keycloak_id, user_claims["sub"]
+    add_user_to_contest_by_username(
+        db, str(contest.id), payload.username
     )
 
 
@@ -135,10 +127,8 @@ def list_participants_endpoint(
     contest=Depends(get_contest_or_404),
     db=Depends(get_db),
 ):
-    """
-    Список пользователей, вступивших в контест.
-    """
     return list_contest_participants(db, str(contest.id))
+
 
 @router.get(
     "/{contest_id}/tasks",
@@ -149,11 +139,4 @@ def list_tasks_endpoint(
     contest_id: str,
     db=Depends(get_db),
 ):
-    """
-    Список задач, привязанных к контесту.
-    """
     return list_contest_tasks(db, str(contest_id))
-
-
-
-

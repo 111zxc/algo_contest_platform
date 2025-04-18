@@ -63,6 +63,15 @@ def get_user(db: Session, keycloak_id: str) -> User | None:
     return result
 
 
+def get_user_by_username(db: Session, username: str) -> User | None:
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        logger.warning(f"Couldn't find user by username {username}")
+        return None
+    logger.info(f"Successfully found user by username {username}")
+    return user
+
+
 def update_user(db: Session, user: User, update_data: dict) -> User:
     """
     Обновляет указанные в update_data поля данного пользователя user

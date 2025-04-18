@@ -7,10 +7,14 @@ import {
     Container,
     CssBaseline,
     Divider,
+    FormControl,
+    InputLabel,
     List,
     ListItem,
     ListItemText,
+    MenuItem,
     Paper,
+    Select,
     Snackbar,
     Typography
 } from '@mui/material';
@@ -43,6 +47,9 @@ export default function ContestDetail() {
     const solLimit = 10;
     const [solLoading, setSolLoading] = useState(false);
     const [solError, setSolError] = useState('');
+    const [solUserFilter, setSolUserFilter] = useState('');
+    const [solTaskFilter, setSolTaskFilter] = useState('');
+
 
     const [isEditingContest, setIsEditingContest] = useState(false);
     const [editContestData, setEditContestData] = useState({
@@ -50,7 +57,7 @@ export default function ContestDetail() {
         description: '',
         is_public: false,
     });
-    const [newParticipantId, setNewParticipantId] = useState('');
+    const [newParticipantUsername, setNewParticipantUsername] = useState('');
 
 
     useEffect(() => {
@@ -102,21 +109,37 @@ export default function ContestDetail() {
 
 
     useEffect(() => {
+        if (!contest) return;
         if (!(auth.isAdmin || auth.currentUser?.keycloak_id === contest.created_by)) return;
+
         setSolLoading(true);
+        const params = new URLSearchParams();
+        params.append('offset', solOffset);
+        params.append('limit', solLimit);
+        if (solUserFilter) params.append('user_id', solUserFilter);
+        if (solTaskFilter) params.append('problem_id', solTaskFilter);
+
         axios.get(
-            `${config.GATEWAY_URL}/solutions/${contestId}/solutions?offset=${solOffset}&limit=${solLimit}`,
+            `${config.GATEWAY_URL}/solutions/${contestId}/solutions?${params.toString()}`,
             { headers: { Authorization: `Bearer ${auth.access_token}` } }
         )
             .then(resp => {
                 setSolutions(resp.data);
                 setSolError('');
             })
-            .catch(() => {
-                setSolError('Ошибка загрузки решений.');
-            })
+            .catch(() => setSolError('Ошибка загрузки решений.'))
             .finally(() => setSolLoading(false));
-    }, [contestId, solOffset, auth.access_token, auth.isAdmin, auth.currentUser]);
+    }, [
+        contest,
+        contestId,
+        solOffset,
+        solUserFilter,
+        solTaskFilter,
+        auth.access_token,
+        auth.isAdmin,
+        auth.currentUser
+    ]);
+
 
 
     const handleJoin = async () => {
@@ -288,10 +311,10 @@ export default function ContestDetail() {
             {(auth.isAdmin || auth.currentUser?.keycloak_id === contest.created_by) && (
                 <Box sx={{ mb: 4, display: 'flex', gap: 1, alignItems: 'center' }}>
                     <TextField
-                        label="Keycloak ID"
+                        label="Username"
                         size="small"
-                        value={newParticipantId}
-                        onChange={e => setNewParticipantId(e.target.value)}
+                        value={newParticipantUsername}
+                        onChange={e => setNewParticipantUsername(e.target.value)}
                     />
                     <Button
                         variant="contained"
@@ -300,7 +323,7 @@ export default function ContestDetail() {
                             try {
                                 await axios.post(
                                     `${config.GATEWAY_URL}/contests/${contestId}/participants`,
-                                    { user_keycloak_id: newParticipantId },
+                                    { username: newParticipantUsername },
                                     { headers: { Authorization: `Bearer ${auth.access_token}` } }
                                 );
                                 const resp = await axios.get(
@@ -308,7 +331,7 @@ export default function ContestDetail() {
                                     { headers: { Authorization: `Bearer ${auth.access_token}` } }
                                 );
                                 setParticipants(resp.data);
-                                setNewParticipantId('');
+                                setNewParticipantUsername('');
                                 setNotify({
                                     open: true,
                                     severity: 'success',
@@ -339,7 +362,13 @@ export default function ContestDetail() {
                 ) : (
                     <List dense>
                         {participants.map((p) => (
-                            <ListItem key={p.keycloak_id}>
+                            <ListItem
+                                key={p.keycloak_id}
+                                component={Link}
+                                to={`/profile/${p.keycloak_id}`}
+                                button
+                                sx={{ textDecoration: 'none', color: 'inherit' }}
+                            >
                                 <ListItemText primary={p.display_name || p.username} />
                             </ListItem>
                         ))}
@@ -350,15 +379,24 @@ export default function ContestDetail() {
             <Divider sx={{ mb: 4 }} />
 
             <Box>
-                <Typography variant="h5" gutterBottom>Задачи контеста</Typography>
-                {(auth.isAdmin || auth.currentUser.keycloak_id === contest.created_by) && (
-                    <Button
-                        variant="contained"
-                        onClick={() => navigate(`/contests/${contest.id}/create-task`)}
-                    >
-                        Создать задачу
-                    </Button>
-                )}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mb: 2
+                    }}
+                >
+                    <Typography variant="h5">Задачи контеста</Typography>
+                    {(auth.isAdmin || auth.currentUser?.keycloak_id === contest.created_by) && (
+                        <Button
+                            variant="contained"
+                            onClick={() => navigate(`/contests/${contest.id}/create-task`)}
+                        >
+                            Создать задачу
+                        </Button>
+                    )}
+                </Box>
                 {tasks.length === 0 ? (
                     <Typography>Нет задач.</Typography>
                 ) : (
@@ -386,79 +424,111 @@ export default function ContestDetail() {
             </Box>
 
             {(auth.isAdmin || auth.currentUser?.keycloak_id === contest.created_by) && (
-                <Box sx={{ mt: 6 }}>
-                    <Typography variant="h5" gutterBottom>
-                        Решения участников
-                    </Typography>
+                <>
+                    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+                        <FormControl sx={{ minWidth: 200 }}>
+                            <InputLabel id="sol-user-filter-label">Пользователь</InputLabel>
+                            <Select
+                                labelId="sol-user-filter-label"
+                                value={solUserFilter}
+                                label="Пользователь"
+                                onChange={e => { setSolUserFilter(e.target.value); setSolOffset(0); }}
+                            >
+                                <MenuItem value=""><em>Все</em></MenuItem>
+                                {participants.map(p => (
+                                    <MenuItem key={p.keycloak_id} value={p.keycloak_id}>
+                                        {p.display_name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <FormControl sx={{ minWidth: 200 }}>
+                            <InputLabel id="sol-task-filter-label">Задача</InputLabel>
+                            <Select
+                                labelId="sol-task-filter-label"
+                                value={solTaskFilter}
+                                label="Задача"
+                                onChange={e => { setSolTaskFilter(e.target.value); setSolOffset(0); }}
+                            >
+                                <MenuItem value=""><em>Все</em></MenuItem>
+                                {tasks.map(t => (
+                                    <MenuItem key={t.id} value={t.id}>
+                                        {t.title}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
 
-                    {solLoading ? (
-                        <CircularProgress size={24} />
-                    ) : solError ? (
-                        <Typography color="error">{solError}</Typography>
-                    ) : solutions.length === 0 ? (
-                        <Typography>Нет решений.</Typography>
-                    ) : (
-                        <Box>
-                            {solutions.map(sol => {
-                                // найдём название задачи
-                                const task = tasks.find(t => t.id === sol.problem_id);
-                                return (
-                                    <Paper
-                                        key={sol.id}
-                                        component="div"
-                                        onClick={() => navigate(`/solutions/${sol.id}`)}
-                                        sx={{
-                                            p: 2,
-                                            mb: 1,
-                                            cursor: 'pointer',
-                                            '&:hover': { backgroundColor: 'action.hover' }
-                                        }}
+                    <Box sx={{ mt: 6 }}>
+                        <Typography variant="h5" gutterBottom>
+                            Решения участников
+                        </Typography>
+
+                        {solLoading ? (
+                            <CircularProgress size={24} />
+                        ) : solError ? (
+                            <Typography color="error">{solError}</Typography>
+                        ) : solutions.length === 0 ? (
+                            <Typography>Нет решений.</Typography>
+                        ) : (
+                            <Box>
+                                {solutions.map(sol => {
+                                    const author = participants.find(p => p.keycloak_id === sol.created_by);
+                                    const authorName = author ? author.display_name : sol.created_by;
+                                    const task = tasks.find(t => t.id === sol.problem_id);
+                                    return (
+                                        <Paper
+                                            key={sol.id}
+                                            onClick={() => navigate(`/solutions/${sol.id}`)}
+                                            sx={{
+                                                p: 2, mb: 1, cursor: 'pointer',
+                                                '&:hover': { backgroundColor: 'action.hover' }
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <Typography>
+                                                    Автор: {authorName}&nbsp;|&nbsp;
+                                                    Задача: {task?.title || sol.problem_id}
+                                                </Typography>
+                                                <Chip
+                                                    label={sol.status}
+                                                    size="small"
+                                                    color={
+                                                        sol.status === 'AC' ? 'success' :
+                                                            sol.status === 'pending' ? 'default' : 'error'
+                                                    }
+                                                />
+                                            </Box>
+                                        </Paper>
+                                    );
+                                })}
+
+
+                                {/* пагинация */}
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => setSolOffset(o => Math.max(0, o - solLimit))}
+                                        disabled={solOffset === 0}
                                     >
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography>
-                                                Автор: {sol.created_by /* или имя, если есть */}
-                                                &nbsp;|&nbsp;
-                                                Задача: {task?.title || sol.problem_id}
-                                            </Typography>
-                                            <Chip
-                                                label={sol.status}
-                                                size="small"
-                                                color={
-                                                    sol.status === 'AC'
-                                                        ? 'success'
-                                                        : sol.status === 'pending'
-                                                            ? 'default'
-                                                            : 'error'
-                                                }
-                                            />
-                                        </Box>
-                                    </Paper>
-                                );
-                            })}
-
-                            {/* пагинация */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    onClick={() => setSolOffset(o => Math.max(0, o - solLimit))}
-                                    disabled={solOffset === 0}
-                                >
-                                    Предыдущие
-                                </Button>
-                                <Typography>Стр. {(solOffset / solLimit) + 1}</Typography>
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    onClick={() => setSolOffset(o => o + solLimit)}
-                                    disabled={solutions.length < solLimit}
-                                >
-                                    Следующие
-                                </Button>
+                                        Предыдущие
+                                    </Button>
+                                    <Typography>Стр. {(solOffset / solLimit) + 1}</Typography>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() => setSolOffset(o => o + solLimit)}
+                                        disabled={solutions.length < solLimit}
+                                    >
+                                        Следующие
+                                    </Button>
+                                </Box>
                             </Box>
-                        </Box>
-                    )}
-                </Box>
+                        )}
+                    </Box>
+                </>
             )}
 
 

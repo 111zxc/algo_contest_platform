@@ -5,7 +5,7 @@ from app.models.contest import Contest
 from app.models.problem import Problem
 from app.models.user import User
 from app.schemas.contest import ContestCreate
-from app.services.user import get_user
+from app.services.user import get_user, get_user_by_username
 
 
 def create_contest(db: Session, data: ContestCreate, owner_id: str) -> Contest:
@@ -110,11 +110,12 @@ def join_public_contest(db: Session, contest_id: str, user_id: str):
     logger.info(f"User {user_id} succesfully joined public contest {contest_id}")
 
 
-def add_user_to_contest(db: Session, contest_id: str, target_user_id: str):
+def add_user_to_contest_by_username(db: Session, contest_id: str, target_username: str):
     contest = get_contest(db, contest_id)
-    user = get_user(db, target_user_id)
+    user = get_user_by_username(db, target_username)
+    target_user_id = user.keycloak_id
 
-    if any(user.keycloak_id == target_user_id for user in contest.participants):
+    if any(user.username == target_user_id for user in contest.participants):
         return
     contest.participants.append(user)
     try:

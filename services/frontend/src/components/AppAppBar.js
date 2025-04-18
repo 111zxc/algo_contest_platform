@@ -121,7 +121,7 @@ const AppAppBar = () => {
                 </Box>
                 <MenuItem onClick={() => goTo('/')}>Главная</MenuItem>
                 <MenuItem onClick={() => goTo('/problems')}>Задачи</MenuItem>
-                <MenuItem onClick={() => goTo('/contests')}>Задачи</MenuItem>
+                <MenuItem onClick={() => goTo('/contests')}>Контесты</MenuItem>
                 {auth.isAdmin && (
                   <>
                     <MenuItem onClick={() => goTo('/tags')}>Теги</MenuItem>
