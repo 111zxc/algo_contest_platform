@@ -34,6 +34,7 @@ def create_problem(db: Session, problem_in: ProblemCreate, creator_id: str) -> P
         test_cases=test_cases_dict,
         time_limit=problem_in.time_limit,
         memory_limit=problem_in.memory_limit,
+        contest_id=problem_in.contest_id
     )
     try:
         db.add(problem)
@@ -283,6 +284,7 @@ def list_enriched_problems_filtered(
             query = query.filter(Problem.difficulty == difficulty)
         if tag_id:
             query = query.filter(Problem.tags.any(id=tag_id))
+        query = query.filter(Problem.contest_id.is_(None))
 
         if sort_by_rating:
             if sort_order == "asc":

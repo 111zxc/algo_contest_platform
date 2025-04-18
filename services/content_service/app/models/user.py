@@ -6,6 +6,7 @@ from app.models.base import Base
 from app.models.solved_problems import solved_problems
 
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -22,4 +23,12 @@ class User(Base):
 
     solved_problems = relationship(
         "Problem", secondary=solved_problems, back_populates="solved_by"
+    )
+
+    owned_contests = relationship("Contest", back_populates="owner")
+    contests_joined = relationship(
+        "Contest",
+        secondary="contest_participants",
+        back_populates="participants",
+        lazy="joined",
     )

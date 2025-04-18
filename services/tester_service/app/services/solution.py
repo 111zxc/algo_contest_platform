@@ -222,3 +222,51 @@ def list_solutions_by_problem_and_user(
         f"Got all {len(solutions)} solutions to problem {problem_id} from user {user_id}"
     )
     return solutions
+
+
+def list_contest_solutions(
+    db: Session,
+    contest_id: str,
+    owner_id: str,
+    user_id: str | None = None,
+    problem_id: str | None = None,
+    offset: int = 0,
+    limit: int = 10,
+) -> list[Solution]:
+    tasks_url = f"{settings.CONTENT_SERVICE_URL}/contests/{contest_id}/tasks"
+    try:
+        r = requests.get(tasks_url, timeout=5)
+        r.raise_for_status()
+    except Exception as e:
+        logger.error(f"Error fetching tasks for contest {contest_id}: {e}")
+        raise
+    tasks = r.json()
+    task_ids = [str(t["id"]) for t in tasks]
+
+    parts_url = f"{settings.CONTENT_SERVICE_URL}/contests/{contest_id}/participants"
+    try:
+        r = requests.get(parts_url, timeout=5)
+        r.raise_for_status()
+    except Exception as e:
+        logger.error(f"Error fetching participants for contest {contest_id}: {e}")
+        raise
+    participants = r.json()
+    participant_ids = [u["keycloak_id"] for u in participants]
+
+    q = db.query(Solution).filter(
+        Solution.problem_id.in_(task_ids),
+        Solution.created_by.in_(participant_ids),
+    )
+    if user_id:
+        q = q.filter(Solution.created_by == user_id)
+    if problem_id:
+        q = q.filter(Solution.problem_id == problem_id)
+
+    solutions = q.offset(offset).limit(limit).all()
+    logger.info(
+        f"User {owner_id} fetched {len(solutions)} solutions "
+        f"for contest {contest_id} "
+        f"(filter user: {user_id}, problem: {problem_id}, "
+        f"offset={offset}, limit={limit})"
+    )
+    return solutions

@@ -65,10 +65,18 @@ const AppAppBar = () => {
               <Button variant="text" size="small" sx={{ color: 'black' }} onClick={() => goTo('/problems')}>
                 Задачи
               </Button>
+              <Button variant="text" size="small" sx={{ color: 'black' }} onClick={() => goTo('/contests')}>
+                Контесты
+              </Button>
               {auth.isAdmin && (
-                <Button variant="text" size="small" sx={{ color: 'black' }} onClick={() => goTo('/tags')}>
-                  Теги
-                </Button>
+                <>
+                  <Button variant="text" size="small" sx={{ color: 'black' }} onClick={() => goTo('/tags')}>
+                    Теги
+                  </Button>
+                  <Button variant="text" size="small" sx={{ color: 'black' }} onClick={() => goTo('/blogposts/create')}>
+                    Блог
+                  </Button>
+                </>
               )}
             </Box>
           </Box>
@@ -113,8 +121,12 @@ const AppAppBar = () => {
                 </Box>
                 <MenuItem onClick={() => goTo('/')}>Главная</MenuItem>
                 <MenuItem onClick={() => goTo('/problems')}>Задачи</MenuItem>
+                <MenuItem onClick={() => goTo('/contests')}>Задачи</MenuItem>
                 {auth.isAdmin && (
-                  <MenuItem onClick={() => goTo('/tags')}>Теги</MenuItem>
+                  <>
+                    <MenuItem onClick={() => goTo('/tags')}>Теги</MenuItem>
+                    <MenuItem onClick={() => goTo('/blogposts/create')}>Блог</MenuItem>
+                  </>
                 )}
                 <Divider sx={{ my: 3 }} />
                 {auth.isAuthenticated ? (

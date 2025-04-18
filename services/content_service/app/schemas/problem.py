@@ -29,6 +29,7 @@ class ProblemBase(BaseModel):
     test_cases: Optional[List[TestCase]] = None
     time_limit: Optional[int] = None
     memory_limit: Optional[int] = None
+    contest_id: Optional[UUID] = None
 
 
 class ProblemCreate(ProblemBase):

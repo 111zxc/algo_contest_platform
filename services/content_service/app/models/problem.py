@@ -31,6 +31,14 @@ class Problem(Base):
     time_limit = Column(Integer, nullable=True)
     memory_limit = Column(Integer, nullable=True)
 
+    contest_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("contests.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    contest = relationship("Contest", back_populates="problems")
+
     tags = relationship("Tag", secondary=problem_tags, back_populates="problems")
 
     solved_by = relationship(

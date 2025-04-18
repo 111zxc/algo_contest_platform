@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -9,6 +9,7 @@ from app.schemas.solution import SolutionCreate, SolutionRead
 from app.services.solution import (
     create_solution,
     get_solution,
+    list_contest_solutions,
     list_solutions_by_problem,
     list_solutions_by_problem_and_user,
     process_solution,
@@ -50,6 +51,36 @@ def submit_solution(
     background_tasks.add_task(process_solution, str(solution.id))
 
     return solution
+
+
+@router.get(
+    "/{contest_id}/solutions",
+    response_model=list[SolutionRead],
+    status_code=status.HTTP_200_OK,
+)
+def list_solutions_endpoint(
+    contest_id: str,
+    user_claims: dict = Depends(get_current_user),
+    user_id: str | None = Query(
+        None, description="Опциональный Keycloak ID участника для фильтра"
+    ),
+    problem_id: str | None = Query(
+        None, description="Опциональный ID задачи для фильтра"
+    ),
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    limit: int = Query(10, ge=1, description="Размер страницы"),
+    db: Session = Depends(get_db),
+):
+    owner_id = user_claims["sub"]
+    return list_contest_solutions(
+        db,
+        contest_id=str(contest_id),
+        owner_id=owner_id,
+        user_id=user_id,
+        problem_id=problem_id,
+        offset=offset,
+        limit=limit,
+    )
 
 
 @router.get(

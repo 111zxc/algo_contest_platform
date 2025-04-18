@@ -4,6 +4,10 @@ import { Route, Routes } from 'react-router-dom';
 import AppAppBar from './components/AppAppBar';
 import BackgroundWrapper from './components/BackgroundWrapper';
 import { AuthProvider } from './context/AuthContext';
+import ContestDetail from './pages/ContestDetail';
+import ContestsPage from './pages/ContestsPage';
+import CreateBlogPostPage from './pages/CreateBlogPostPage';
+import CreateContestPage from './pages/CreateContestPage';
 import CreatePostPage from './pages/CreatePostPage';
 import CreateProblemPage from './pages/CreateProblemPage';
 import HomePage from './pages/HomePage';
@@ -38,7 +42,11 @@ const App = () => {
             <Route path="/profile/:userId?" element={<ProfilePage />} />
             <Route path="/tags" element={<TagsPage />} />
             <Route path="/solutions/:solution_id" element={<SolutionDetail />} />
-
+            <Route path="/blogposts/create" element={<CreateBlogPostPage />} />
+            <Route path="/contests" element={<ContestsPage />} />
+            <Route path="/contests/create" element={<CreateContestPage />} />
+            <Route path="/contests/:contestId" element={<ContestDetail />} />
+            <Route path="/contests/:contestId/create-task" element={<CreateProblemPage />} />
           </Routes>
         </BackgroundWrapper>
       </AuthProvider>

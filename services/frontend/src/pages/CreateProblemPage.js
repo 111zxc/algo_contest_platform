@@ -1,13 +1,15 @@
 import { Box, Button, Container, FormControl, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import config from '../config';
 import { AuthContext } from '../context/AuthContext';
 
 export default function CreateProblemPage() {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const { contestId } = useParams();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -41,11 +43,16 @@ export default function CreateProblemPage() {
       const payload = {
         ...formData,
         test_cases: testCases,
+        ...(contestId ? { contest_id: contestId } : {})
       };
       await axios.post(`${config.GATEWAY_URL}/problems/`, payload, {
         headers: { Authorization: `Bearer ${auth.access_token}` },
       });
-      navigate('/problems');
+      if (contestId) {
+        navigate(`/contests/${contestId}`);
+      } else {
+        navigate('/problems');
+      }
     } catch (err) {
       setError('Ошибка при создании задачи');
     }
