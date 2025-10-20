@@ -74,11 +74,13 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       DB_VENDOR: H2
+      KC_IMPORT: /opt/keycloak/data/import/realm-export.json
     ports:
       - "8080:8080"
-    command: start-dev
+    command: ["start-dev", "--import-realm"]
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./services/keycloak:/opt/keycloak/data/import
     networks:
       - backend
 
