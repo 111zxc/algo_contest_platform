@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TargetType(str, Enum):
@@ -27,13 +27,11 @@ class ReactionCreate(ReactionBase):
 
 
 class ReactionRead(ReactionBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     created_at: datetime
     created_by: str
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
 
 
 class ReactionListResponse(BaseModel):

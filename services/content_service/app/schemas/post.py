@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.tag import TagRead
 
@@ -18,16 +18,14 @@ class PostCreate(PostBase):
 
 
 class PostRead(PostBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     problem_id: UUID
     created_at: datetime
     updated_at: datetime | None = None
     tags: list[TagRead]
     created_by: str
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
 
 
 class PostReadExtended(PostRead):

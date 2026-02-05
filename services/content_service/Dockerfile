@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-ENV POETRY_VERSION=1.5.1
+ENV POETRY_VERSION=2.1.1
 ENV PATH="/root/.local/bin:${PATH}"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

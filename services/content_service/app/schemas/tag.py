@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TagBase(BaseModel):
@@ -12,8 +12,6 @@ class TagCreate(TagBase):
 
 
 class TagRead(TagBase):
-    id: UUID
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    id: UUID

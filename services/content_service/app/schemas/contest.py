@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ContestBase(BaseModel):
@@ -15,14 +15,12 @@ class ContestCreate(ContestBase):
 
 
 class ContestRead(ContestBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     created_by: str
     created_at: datetime
     updated_at: datetime | None = None
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
 
 
 class ContestJoin(BaseModel):

@@ -1,23 +1,24 @@
-from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     PROJECT_NAME: str = "Content Service"
 
-    DATABASE_URL: str = Field("12345", env="DATABASE_URL")
+    DATABASE_URL: str = "12345"
 
-    KEYCLOAK_URL: str = Field("http://keycloak:8080", env="KEYCLOAK_URL")
-    KEYCLOAK_REALM: str = Field("myrealm", env="KEYCLOAK_REALM")
-    KEYCLOAK_CLIENT_ID: str = Field("myclient", env="KEYCLOAK_CLIENT_ID")
-    KEYCLOAK_CLIENT_SECRET: str = Field("secret", env="KEYCLOAK_CLIENT_SECRET")
+    KEYCLOAK_URL: str = "http://keycloak:8080"
+    KEYCLOAK_REALM: str = "myrealm"
+    KEYCLOAK_CLIENT_ID: str = "myclient"
+    KEYCLOAK_CLIENT_SECRET: str = "secret"
 
-    KEYCLOAK_ADMIN: str = Field("admin", env="KEYCLOAK_ADMIN")
-    KEYCLOAK_ADMIN_PASSWORD: str = Field("admin", env="KEYCLOAK_ADMIN_PASSWORD")
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    KEYCLOAK_ADMIN: str = "admin"
+    KEYCLOAK_ADMIN_PASSWORD: str = "admin"
 
 
 settings = Settings()

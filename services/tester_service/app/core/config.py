@@ -1,32 +1,29 @@
-from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = Field("Tester Service", env="PROJECT_NAME")
-
-    DATABASE_URL: str = Field("sqlite:///tester.db", env="DATABASE_URL")
-
-    KEYCLOAK_URL: str = Field("http://keycloak:8080", env="KEYCLOAK_URL")
-    KEYCLOAK_REALM: str = Field("myrealm", env="KEYCLOAK_REALM")
-    KEYCLOAK_CLIENT_ID: str = Field("myclient", env="KEYCLOAK_CLIENT_ID")
-    KEYCLOAK_CLIENT_SECRET: str = Field("secret", env="KEYCLOAK_CLIENT_SECRET")
-
-    DOCKER_HOST: str = Field("tcp://dind:2375", env="DOCKER_HOST")
-
-    CONTENT_SERVICE_URL: str = Field(
-        "http://content_service:8000", env="CONTENT_SERVICE_URL"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",  # чтобы лишние env не валили загрузку
     )
 
-    CELERY_BROKER_URL: str = Field(
-        "amqp://guest:guest@rabbitmq:5672", env="CELERY_BROKER_URL"
-    )
+    PROJECT_NAME: str = "Tester Service"
 
-    LANGUAGES_CONFIG: str = Field("languages.yaml", env="LANGUAGES_CONFIG")
+    DATABASE_URL: str = "sqlite:///tester.db"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    KEYCLOAK_URL: str = "http://keycloak:8080"
+    KEYCLOAK_REALM: str = "myrealm"
+    KEYCLOAK_CLIENT_ID: str = "myclient"
+    KEYCLOAK_CLIENT_SECRET: str = "secret"
+
+    DOCKER_HOST: str = "tcp://dind:2375"
+
+    CONTENT_SERVICE_URL: str = "http://content_service:8000"
+
+    CELERY_BROKER_URL: str = "amqp://guest:guest@rabbitmq:5672"
+
+    LANGUAGES_CONFIG: str = "languages.yaml"
 
 
 settings = Settings()

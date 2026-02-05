@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.tag import TagRead
 
@@ -26,7 +26,7 @@ class ProblemBase(BaseModel):
     title: str
     description: str
     difficulty: DifficultyEnum
-    test_cases: Optional[List[TestCase]] = None
+    test_cases: Optional[list[TestCase]] = None
     time_limit: Optional[int] = None
     memory_limit: Optional[int] = None
     contest_id: Optional[UUID] = None
@@ -37,15 +37,13 @@ class ProblemCreate(ProblemBase):
 
 
 class ProblemRead(ProblemBase):
-    id: UUID
-    created_by: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    tags: list[TagRead]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    id: UUID
+    created_by: UUID  # если в БД у тебя str, лучше сделать str; я оставил как было
+    created_at: datetime
+    updated_at: datetime | None = None
+    tags: list[TagRead]
 
 
 class ProblemReadExtended(ProblemRead):

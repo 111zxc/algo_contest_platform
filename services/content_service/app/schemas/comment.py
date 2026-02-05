@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CommentBase(BaseModel):
@@ -14,15 +14,13 @@ class CommentCreate(CommentBase):
 
 
 class CommentRead(CommentBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     post_id: UUID
     created_at: datetime
     updated_at: datetime | None = None
     created_by: str
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
 
 
 class CommentReadExtended(CommentRead):
