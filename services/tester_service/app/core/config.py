@@ -22,6 +22,8 @@ class Settings(BaseSettings):
         "amqp://guest:guest@rabbitmq:5672", env="CELERY_BROKER_URL"
     )
 
+    LANGUAGES_CONFIG: str = Field("languages.yaml", env="LANGUAGES_CONFIG")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

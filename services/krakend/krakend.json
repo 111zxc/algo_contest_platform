@@ -40,6 +40,23 @@
     },
 
     {
+      "endpoint": "/languages",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "input_headers": ["*"],
+      "input_query_strings": ["*"],
+      "headers_to_pass": ["*"],
+      "backend": [
+        {
+          "url_pattern": "/languages/",
+          "host": ["http://tester_service:8001"],
+          "method": "GET",
+          "disable_host_sanitize": true
+        }
+      ]
+    },
+
+    {
       "endpoint": "/solutions/{level1}",
       "method": "GET",
       "output_encoding": "no-op",

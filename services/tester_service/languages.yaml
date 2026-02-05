@@ -1,0 +1,28 @@
+languages:
+  - key: python
+    label: Python
+    image: python:3.12-slim
+    file_name: code.py
+    command_template: "echo {input} | python /app/{file}"
+    ace_mode: python
+
+  - key: java
+    label: Java
+    image: eclipse-temurin:17-jdk-jammy
+    file_name: Main.java
+    command_template: "javac /app/{file} && echo {input} | java -cp /app Main"
+    ace_mode: java
+
+  - key: javascript
+    label: JavaScript
+    image: node:18-slim
+    file_name: code.js
+    command_template: "echo {input} | node /app/{file}"
+    ace_mode: javascript
+
+  - key: cpp
+    label: C++
+    image: gcc:latest
+    file_name: code.cpp
+    command_template: "g++ /app/{file} -o /app/main && echo {input} | /app/main"
+    ace_mode: c_cpp

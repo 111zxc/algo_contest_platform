@@ -87,7 +87,10 @@ export default function ProblemDetail() {
   const [availableTags, setAvailableTags] = useState([]);
   const [selectedTagToAttach, setSelectedTagToAttach] = useState('');
 
-  const [language, setLanguage] = useState('python');
+  const [languages, setLanguages] = useState([]);
+  const [languagesLoading, setLanguagesLoading] = useState(false);
+  const [selectedLangKey, setSelectedLangKey] = useState('python');
+
   const [code, setCode] = useState('');
 
   const [posts, setPosts] = useState([]);
@@ -101,7 +104,7 @@ export default function ProblemDetail() {
       const payload = {
         problem_id: problem.id,
         code: code,
-        language: language,
+        language: selectedLangKey,
       };
       const resp = await axios.post(`${config.GATEWAY_URL}/solutions/`, payload, {
         headers: { Authorization: `Bearer ${auth.access_token}` },
@@ -151,6 +154,37 @@ export default function ProblemDetail() {
       fetchMySolutions();
     }
   }, [showMySolutions, problem?.id, auth.access_token]);
+
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      setLanguagesLoading(true);
+      try {
+        const resp = await axios.get(`${config.GATEWAY_URL}/languages/`);
+
+        setLanguages(resp.data || []);
+
+        const keys = (resp.data || []).map(l => l.key);
+        if (keys.includes('python')) {
+          setSelectedLangKey('python');
+        } else if (keys.length > 0) {
+          setSelectedLangKey(keys[0]);
+        }
+      } catch (err) {
+        setLanguages([
+          { key: 'python', label: 'Python', ace_mode: 'python' },
+          { key: 'java', label: 'Java', ace_mode: 'java' },
+          { key: 'javascript', label: 'JavaScript', ace_mode: 'javascript' },
+          { key: 'cpp', label: 'C++', ace_mode: 'c_cpp' },
+        ]);
+        setSelectedLangKey('python');
+      } finally {
+        setLanguagesLoading(false);
+      }
+    };
+
+    fetchLanguages();
+  }, []);
+
 
   useEffect(() => {
     const fetchProblem = async () => {
@@ -326,7 +360,7 @@ export default function ProblemDetail() {
   };
 
   const handleLanguageChange = (e) => {
-    setLanguage(e.target.value);
+    setSelectedLangKey(e.target.value);
   };
 
   const handleAttachTag = async () => {
@@ -365,6 +399,9 @@ export default function ProblemDetail() {
   const handleCreatePost = () => {
     navigate(`/posts/create?problem_id=${problem.id}`);
   };
+
+  const selectedLang = languages.find(l => l.key === selectedLangKey);
+  const aceMode = selectedLang?.ace_mode || 'text';
 
   if (loading) {
     return (
@@ -727,20 +764,22 @@ export default function ProblemDetail() {
                   <InputLabel id="language-select-label">Язык программирования</InputLabel>
                   <Select
                     labelId="language-select-label"
-                    value={language}
+                    value={selectedLangKey}
                     label="Язык программирования"
                     onChange={handleLanguageChange}
+                    disabled={languagesLoading || languages.length === 0}
                   >
-                    <MenuItem value="python">Python</MenuItem>
-                    <MenuItem value="java">Java</MenuItem>
-                    <MenuItem value="javascript">JavaScript</MenuItem>
-                    <MenuItem value="c_cpp">C++</MenuItem>
+                    {languages.map((lang) => (
+                      <MenuItem key={lang.key} value={lang.key}>
+                        {lang.label}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
 
                 <Box sx={{ flexGrow: 1, minHeight: '300px', mb: 2 }}>
                   <AceEditor
-                    mode={language}
+                    mode={aceMode}
                     theme="github"
                     name="code_editor"
                     onChange={(newCode) => setCode(newCode)}
@@ -752,7 +791,7 @@ export default function ProblemDetail() {
                     width="100%"
                     height="100%"
                     setOptions={{
-                      useWorker: language === 'javascript' ? false : true,
+                      useWorker: selectedLangKey === 'javascript' ? false : true,
                       showLineNumbers: true,
                       tabSize: 2,
                     }}

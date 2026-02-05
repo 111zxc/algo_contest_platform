@@ -2,6 +2,7 @@ import logging
 import sys
 
 logger = logging.getLogger("tester_service")
+logger.propagate = False
 logger.setLevel(logging.DEBUG)
 
 if not logger.handlers:

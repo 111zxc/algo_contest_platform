@@ -7,6 +7,7 @@ import uuid
 import docker
 
 from app.core.config import settings
+from app.core.languages import get_language
 from app.core.logger import logger
 
 
@@ -30,28 +31,19 @@ def run_solution_in_container(
     client = get_docker_client()
 
     logger.info(f"Running solution:\n{code}\n")
+    logger.info(f"Requested language: {language}")
     overall_status = "AC"
     max_time_used = 0.0
     results = []
 
-    if language == "python":
-        image = "python:3.12-slim"
-        file_name = "code.py"
-        command_template = "echo {input} | python /app/{file}"
-    elif language == "java":
-        image = "openjdk:17-slim"
-        file_name = "Main.java"
-        command_template = "javac /app/{file} && echo {input} | java -cp /app Main"
-    elif language == "javascript":
-        image = "node:18-slim"
-        file_name = "code.js"
-        command_template = "echo {input} | node /app/{file}"
-    elif language in ("c++", "cpp"):
-        image = "gcc:latest"
-        file_name = "code.cpp"
-        command_template = "g++ /app/{file} -o /app/main && echo {input} | /app/main"
-    else:
-        return {"status": "RE", "time_used": 0.0, "results": [{"status": "RE", "time_used": 0, "output": "Unsupported language"}]}
+    spec = get_language(language)
+    if not spec:
+        return {"status": "RE", "time_used": 0.0, "results": [{"status": "RE", "time_used": 0, "output": f"Unsupported language: {language}"}]}
+    logger.info(f"Language spec: {spec}")
+
+    image = spec.image
+    file_name = spec.file_name
+    command_template = spec.command_template
 
     mem_lim = f"{memory_limit}m"
 
