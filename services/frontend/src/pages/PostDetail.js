@@ -277,10 +277,8 @@ export default function PostDetail() {
   const [commentsError, setCommentsError] = useState('');
   const [newCommentContent, setNewCommentContent] = useState('');
 
-  const [language, setLanguage] = useState('python');
-  const [code, setCode] = useState('');
-
-  const goBack = () => navigate(-1);
+  const [languages, setLanguages] = useState([]);
+  const [languagesLoading, setLanguagesLoading] = useState(false);
 
   const refreshComments = async () => {
     try {
@@ -337,6 +335,27 @@ export default function PostDetail() {
     };
     fetchTags();
   }, [auth.access_token]);
+
+  useEffect(() => {
+  const fetchLanguages = async () => {
+    setLanguagesLoading(true);
+    try {
+      const resp = await axios.get(`${config.GATEWAY_URL}/languages/`);
+      setLanguages(resp.data || []);
+    } catch (err) {
+      setLanguages([
+        { key: 'python', label: 'Python', ace_mode: 'python' },
+        { key: 'java', label: 'Java', ace_mode: 'java' },
+        { key: 'javascript', label: 'JavaScript', ace_mode: 'javascript' },
+        { key: 'cpp', label: 'C++', ace_mode: 'c_cpp' },
+      ]);
+    } finally {
+      setLanguagesLoading(false);
+    }
+  };
+
+  fetchLanguages();
+}, []);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -489,11 +508,6 @@ export default function PostDetail() {
     }
   };
 
-
-  const handleLanguageChange = (e) => {
-    setLanguage(e.target.value);
-  };
-
   if (loading) {
     return (
       <Container component="main" sx={{ py: 8 }}>
@@ -552,18 +566,19 @@ export default function PostDetail() {
             <FormControl fullWidth>
               <InputLabel id="language-select-label">Язык</InputLabel>
               <Select
-                labelId="language-select-label"
-                name="language"
-                value={editData.language}
-                label="Язык"
-                onChange={handleEditChange}
-              >
-                <MenuItem value="russian">Russian</MenuItem>
-                <MenuItem value="python">Python</MenuItem>
-                <MenuItem value="java">Java</MenuItem>
-                <MenuItem value="javascript">JavaScript</MenuItem>
-                <MenuItem value="c_cpp">C++</MenuItem>
-              </Select>
+              labelId="language-select-label"
+              name="language"
+              value={editData.language || ''}
+              label="Язык"
+              onChange={handleEditChange}
+              disabled={languagesLoading || languages.length === 0}
+            >
+              {languages.map((lang) => (
+                <MenuItem key={lang.key} value={lang.key}>
+                  {lang.label}
+                </MenuItem>
+              ))}
+            </Select>
             </FormControl>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button variant="contained" onClick={handleSaveEdit} startIcon={<SaveIcon />}>
