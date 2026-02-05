@@ -9,6 +9,7 @@ from pydantic import BaseModel
 class SolutionStatus(str, Enum):
     PENDING = "pending"
     TLE = "TLE"
+    MLE = "MLE"
     WA = "WA"
     RE = "RE"
     AC = "AC"

@@ -12,6 +12,7 @@ Base = declarative_base()
 class SolutionStatus(str, enum.Enum):
     PENDING = "pending"
     TLE = "TLE"
+    MLE = "MLE"
     WA = "WA"
     RE = "RE"
     AC = "AC"

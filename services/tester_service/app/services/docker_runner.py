@@ -73,6 +73,8 @@ def run_solution_in_container(
                 command=command,
                 detach=True,
                 mem_limit=mem_lim,
+                memswap_limit=mem_lim,
+                oom_kill_disable=False,
                 cpu_quota=50000,
                 volumes={temp_dir: {"bind": "/app", "mode": "rw"}},
             )
@@ -90,6 +92,19 @@ def run_solution_in_container(
                     pass
                 exit_code = None
 
+            oom_killed = False
+            state_exit_code = None
+            try:
+                container.reload()
+                state = container.attrs.get("State", {}) or {}
+                oom_killed = bool(state.get("OOMKilled", False))
+                state_exit_code = state.get("ExitCode", None)
+            except Exception as e:
+                logger.warning(f"Could not reload container state: {e}")
+
+            if exit_code is None and state_exit_code is not None:
+                exit_code = state_exit_code
+
             try:
                 logs = container.logs().decode("utf-8", errors="replace")
             except Exception as e:
@@ -98,6 +113,8 @@ def run_solution_in_container(
 
             if exit_code is None:
                 tc_status = "TLE"
+            elif oom_killed:
+                tc_status = "MLE"
             elif exit_code != 0:
                 tc_status = "RE"
             else:
@@ -109,9 +126,11 @@ def run_solution_in_container(
 
             if tc_status == "TLE":
                 overall_status = "TLE"
-            elif tc_status == "RE" and overall_status != "TLE":
+            elif tc_status == "MLE" and overall_status not in ("TLE",):
+                overall_status = "MLE"
+            elif tc_status == "RE" and overall_status not in ("TLE", "MLE"):
                 overall_status = "RE"
-            elif tc_status == "WA" and overall_status not in ("TLE", "RE"):
+            elif tc_status == "WA" and overall_status not in ("TLE", "MLE", "RE"):
                 overall_status = "WA"
 
             if elapsed > max_time_used:
