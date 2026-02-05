@@ -34,7 +34,7 @@ export default function HomePage() {
     try {
       const params = new URLSearchParams({ offset, limit });
       const resp = await axios.get(
-        `${config.GATEWAY_URL}/blogposts?${params.toString()}`,
+        `${config.GATEWAY_URL}/blogposts/?${params.toString()}`,
         {
           headers: auth.access_token
             ? { Authorization: `Bearer ${auth.access_token}` }

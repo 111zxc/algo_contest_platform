@@ -32,7 +32,7 @@ export default function ContestsPage() {
             let url = '';
             let opts = {};
             if (mode === 'public') {
-                url = `${config.GATEWAY_URL}/contests`;
+                url = `${config.GATEWAY_URL}/contests/`;
                 const params = new URLSearchParams({ offset, limit });
                 url += `?${params.toString()}`;
             } else if (mode === 'my') {

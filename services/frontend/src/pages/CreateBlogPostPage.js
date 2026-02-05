@@ -33,7 +33,7 @@ export default function CreateBlogPostPage() {
         setLoading(true);
         try {
             await axios.post(
-                `${config.GATEWAY_URL}/blogposts`,
+                `${config.GATEWAY_URL}/blogposts/`,
                 { title, description },
                 { headers: { Authorization: `Bearer ${auth.access_token}` } }
             );

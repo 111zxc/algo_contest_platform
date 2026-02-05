@@ -83,7 +83,8 @@ def update_post(db: Session, post: Post, update_data: dict) -> Post:
         Post - обновленный пост
     """
     for key, value in update_data.items():
-        setattr(post, key, value)
+        if key != 'tags':
+            setattr(post, key, value)
     try:
         db.commit()
         db.refresh(post)

@@ -91,7 +91,8 @@ def update_problem(db: Session, problem: Problem, update_data: dict) -> Problem:
         Problem - обновленная задача
     """
     for key, value in update_data.items():
-        setattr(problem, key, value)
+        if key != 'tags':
+            setattr(problem, key, value)
     try:
         db.commit()
         db.refresh(problem)

@@ -36,7 +36,7 @@ export default function CreateContestPage() {
         setLoading(true);
         try {
             await axios.post(
-                `${config.GATEWAY_URL}/contests`,
+                `${config.GATEWAY_URL}/contests/`,
                 {
                     name,
                     description,
