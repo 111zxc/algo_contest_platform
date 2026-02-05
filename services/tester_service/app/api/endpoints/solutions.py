@@ -12,8 +12,8 @@ from app.services.solution import (
     list_contest_solutions,
     list_solutions_by_problem,
     list_solutions_by_problem_and_user,
-    process_solution,
 )
+from app.worker.tasks import process_solution_task
 
 router = APIRouter(prefix="/solutions", tags=["solutions"])
 
@@ -48,7 +48,7 @@ def submit_solution(
     user_id = user_claims.get("sub")
     solution = create_solution(db, solution_in, user_id)
 
-    background_tasks.add_task(process_solution, str(solution.id))
+    process_solution_task.delay(str(solution.id))
 
     return solution
 

@@ -18,6 +18,10 @@ class Settings(BaseSettings):
         "http://content_service:8000", env="CONTENT_SERVICE_URL"
     )
 
+    CELERY_BROKER_URL: str = Field(
+        "amqp://guest:guest@rabbitmq:5672", env="CELERY_BROKER_URL"
+    )
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

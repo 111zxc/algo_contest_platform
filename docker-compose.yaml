@@ -64,6 +64,26 @@ services:
     networks:
       - backend
 
+  # queue worker
+  tester_worker:
+    build: ./services/tester_service
+    container_name: tester_worker
+    env_file:
+      - ./services/tester_service/.env
+    volumes:
+      - shared_tmp:/shared_tmp
+    depends_on:
+      - tester_postgres
+      - dind
+      - rabbitmq
+    networks:
+      - backend
+    command: >
+      celery -A app.worker.celery_app:celery_app worker
+      --loglevel=INFO
+      --concurrency=2
+      --prefetch-multiplier=1
+
   # --------------------------------------------------------------------------
   # KEYCLOAK
   # --------------------------------------------------------------------------
@@ -137,6 +157,18 @@ services:
     networks:
       - backend
   # --------------------------------------------------------------------------
+  # RABBITMQ
+  # --------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - backend
+  # --------------------------------------------------------------------------
+
 volumes:
   content_data:
   tester_data:

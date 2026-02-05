@@ -153,7 +153,7 @@ def process_solution(solution_id: str) -> dict:
             params = {"user_id": solution.created_by}
             try:
                 resp = requests.post(mark_url, params=params)
-                if resp.status_code != 200:
+                if not resp.ok:
                     logger.warning(
                         f"Marking problem {solution.problem_id} as solved failed for user {solution.created_by}"
                     )
