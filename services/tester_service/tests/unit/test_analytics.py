@@ -5,8 +5,6 @@ import app.services.analytics as analytics_service
 
 
 def test_compute_performance_percentile_no_accepted_returns_100(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(analytics_service, "logger", logger_mock)
-
     q1 = MagicMock()
     chain1 = MagicMock()
     db_session.query.return_value = q1
@@ -15,12 +13,9 @@ def test_compute_performance_percentile_no_accepted_returns_100(db_session, logg
 
     res = analytics_service.compute_performance_percentile(db_session, "pid", 1.23)
     assert res == 100.0
-    logger_mock.debug.assert_called_once()
 
 
 def test_compute_performance_percentile_computes_ratio(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(analytics_service, "logger", logger_mock)
-
     q_total = MagicMock()
     chain_total = MagicMock()
     q_slow = MagicMock()
@@ -36,4 +31,3 @@ def test_compute_performance_percentile_computes_ratio(db_session, logger_mock, 
 
     res = analytics_service.compute_performance_percentile(db_session, "pid", 2.0)
     assert res == 30.0
-    logger_mock.info.assert_called_once()

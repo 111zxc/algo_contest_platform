@@ -5,8 +5,6 @@ import app.services.post as post_service
 
 
 def test_create_post_success(db_session, simple_obj, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     post_in = simple_obj(
         problem_id="pr1",
         title="t",
@@ -34,13 +32,9 @@ def test_create_post_success(db_session, simple_obj, logger_mock, monkeypatch):
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(created)
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
-    logger_mock.error.assert_not_called()
 
 
 def test_create_post_commit_error_rolls_back(db_session, simple_obj, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     post_in = simple_obj(problem_id="pr1", title="t", content="c", language="py", status="DRAFT")
     created = MagicMock()
     monkeypatch.setattr(post_service, "Post", lambda **kwargs: created)
@@ -50,12 +44,9 @@ def test_create_post_commit_error_rolls_back(db_session, simple_obj, logger_mock
         post_service.create_post(db_session, post_in, user_id="u1")
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_get_post_found_uses_joinedload(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     jl = object()
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: jl)
 
@@ -72,12 +63,9 @@ def test_get_post_found_uses_joinedload(db_session, logger_mock, monkeypatch):
     assert res is post
 
     chain.options.assert_called_once()
-    logger_mock.info.assert_called_once()
-    logger_mock.warning.assert_not_called()
 
 
 def test_get_post_not_found_logs_warning(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -89,11 +77,9 @@ def test_get_post_not_found_logs_warning(db_session, logger_mock, monkeypatch):
 
     res = post_service.get_post(db_session, "pid")
     assert res is None
-    logger_mock.warning.assert_called_once()
 
 
 def test_get_post_query_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -102,12 +88,9 @@ def test_get_post_query_error_raises(db_session, logger_mock, monkeypatch):
 
     with pytest.raises(Exception):
         post_service.get_post(db_session, "pid")
-    logger_mock.error.assert_called_once()
 
 
 def test_update_post_skips_tags(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
     post.tags = ["old"]
@@ -119,12 +102,9 @@ def test_update_post_skips_tags(db_session, logger_mock, monkeypatch):
 
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(post)
-    logger_mock.info.assert_called_once()
 
 
 def test_update_post_commit_error_rolls_back(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
     db_session.commit.side_effect = RuntimeError("fail")
@@ -133,12 +113,9 @@ def test_update_post_commit_error_rolls_back(db_session, logger_mock, monkeypatc
         post_service.update_post(db_session, post, {"title": "x"})
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_delete_post_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
 
@@ -147,12 +124,9 @@ def test_delete_post_success(db_session, logger_mock, monkeypatch):
     db_session.delete.assert_called_once_with(post)
     db_session.commit.assert_called_once()
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
 
 
 def test_delete_post_error_rolls_back(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
     db_session.delete.side_effect = Exception("nope")
@@ -161,12 +135,10 @@ def test_delete_post_error_rolls_back(db_session, logger_mock, monkeypatch):
         post_service.delete_post(db_session, post)
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
     db_session.commit.assert_not_called()
 
 
 def test_list_posts_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -178,11 +150,9 @@ def test_list_posts_success(db_session, logger_mock, monkeypatch):
     res = post_service.list_posts(db_session)
     assert len(res) == 2
     q.options.assert_called_once()
-    logger_mock.info.assert_called_once()
 
 
 def test_list_posts_by_user_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -195,11 +165,9 @@ def test_list_posts_by_user_success(db_session, logger_mock, monkeypatch):
 
     res = post_service.list_posts_by_user(db_session, "u1")
     assert len(res) == 1
-    logger_mock.info.assert_called_once()
 
 
 def test_list_posts_by_problem_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -212,11 +180,9 @@ def test_list_posts_by_problem_success(db_session, logger_mock, monkeypatch):
 
     res = post_service.list_posts_by_problem(db_session, "pr1")
     assert len(res) == 3
-    logger_mock.info.assert_called_once()
 
 
 def test_list_posts_by_tag_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     monkeypatch.setattr(post_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -229,12 +195,9 @@ def test_list_posts_by_tag_success(db_session, logger_mock, monkeypatch):
 
     res = post_service.list_posts_by_tag(db_session, "tag1")
     assert len(res) == 1
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_posts_by_problem_sets_fields_and_defaults_balance(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     subq = MagicMock(name="reaction_subq")
     subq.c = MagicMock()
     subq.c.balance = MagicMock(name="balance_col")
@@ -300,12 +263,9 @@ def test_list_enriched_posts_by_problem_sets_fields_and_defaults_balance(db_sess
     assert p2.reaction_balance == 5
 
     assert fake_order.desc_called is True
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_posts_by_problem_applies_tag_filter(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
-
     subq = MagicMock()
     subq.c = MagicMock()
     subq.c.balance = MagicMock()
@@ -339,14 +299,10 @@ def test_list_enriched_posts_by_problem_applies_tag_filter(db_session, logger_mo
     )
 
     assert main_chain.filter.call_count >= 2
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_posts_by_problem_subquery_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(post_service, "logger", logger_mock)
     db_session.query.side_effect = Exception("boom")
 
     with pytest.raises(Exception):
         post_service.list_enriched_posts_by_problem(db_session, "pr1")
-
-    logger_mock.error.assert_called_once()

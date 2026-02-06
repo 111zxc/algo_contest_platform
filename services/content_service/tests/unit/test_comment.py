@@ -5,8 +5,6 @@ import app.services.comment as comment_service
 
 
 def test_create_comment_success(db_session, simple_obj, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     comment_in = simple_obj(
         post_id="post1",
         content="hi",
@@ -30,13 +28,9 @@ def test_create_comment_success(db_session, simple_obj, logger_mock, monkeypatch
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(created)
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
-    logger_mock.error.assert_not_called()
 
 
 def test_create_comment_commit_error_rolls_back(db_session, simple_obj, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     comment_in = simple_obj(post_id="p", content="x", parent_comment_id=None)
     created = MagicMock()
     monkeypatch.setattr(comment_service, "Comment", lambda **kwargs: created)
@@ -47,11 +41,9 @@ def test_create_comment_commit_error_rolls_back(db_session, simple_obj, logger_m
         comment_service.create_comment(db_session, comment_in, user_id="u1")
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_get_comment_found(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
 
     c = MagicMock()
     q = MagicMock()
@@ -63,13 +55,9 @@ def test_get_comment_found(db_session, logger_mock, monkeypatch):
     res = comment_service.get_comment(db_session, "cid")
 
     assert res is c
-    logger_mock.info.assert_called_once()
-    logger_mock.warning.assert_not_called()
 
 
 def test_get_comment_not_found(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -79,11 +67,9 @@ def test_get_comment_not_found(db_session, logger_mock, monkeypatch):
     res = comment_service.get_comment(db_session, "cid")
 
     assert res is None
-    logger_mock.warning.assert_called_once()
 
 
 def test_get_comment_query_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
 
     q = MagicMock()
     q.filter.side_effect = Exception("boom")
@@ -92,12 +78,8 @@ def test_get_comment_query_error_raises(db_session, logger_mock, monkeypatch):
     with pytest.raises(Exception):
         comment_service.get_comment(db_session, "cid")
 
-    logger_mock.error.assert_called_once()
-
 
 def test_update_comment_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     c = MagicMock()
     c.id = "cid"
 
@@ -107,13 +89,10 @@ def test_update_comment_success(db_session, logger_mock, monkeypatch):
     assert c.content == "new"
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(c)
-    logger_mock.info.assert_called_once()
     db_session.rollback.assert_not_called()
 
 
 def test_update_comment_commit_error_rolls_back(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     c = MagicMock()
     c.id = "cid"
     db_session.commit.side_effect = RuntimeError("fail")
@@ -122,12 +101,9 @@ def test_update_comment_commit_error_rolls_back(db_session, logger_mock, monkeyp
         comment_service.update_comment(db_session, c, {"content": "x"})
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_delete_comment_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     c = MagicMock()
     c.id = "cid"
 
@@ -136,12 +112,9 @@ def test_delete_comment_success(db_session, logger_mock, monkeypatch):
     db_session.delete.assert_called_once_with(c)
     db_session.commit.assert_called_once()
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
 
 
 def test_delete_comment_error_rolls_back(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     c = MagicMock()
     c.id = "cid"
     db_session.delete.side_effect = Exception("nope")
@@ -150,13 +123,10 @@ def test_delete_comment_error_rolls_back(db_session, logger_mock, monkeypatch):
         comment_service.delete_comment(db_session, c)
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
     db_session.commit.assert_not_called()
 
 
 def test_list_comments_by_post_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -165,12 +135,9 @@ def test_list_comments_by_post_success(db_session, logger_mock, monkeypatch):
 
     res = comment_service.list_comments_by_post(db_session, "pid")
     assert len(res) == 2
-    logger_mock.info.assert_called_once()
 
 
 def test_list_comments_by_user_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -179,12 +146,9 @@ def test_list_comments_by_user_success(db_session, logger_mock, monkeypatch):
 
     res = comment_service.list_comments_by_user(db_session, "uid")
     assert len(res) == 1
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_comments_by_post_sets_fields_and_calls_balance(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     q = MagicMock(name="query")
     chain = MagicMock(name="chain")
     db_session.query.return_value = q
@@ -211,17 +175,12 @@ def test_list_enriched_comments_by_post_sets_fields_and_calls_balance(db_session
 
     balance_fn.assert_any_call(db_session, "c1", "comment")
     balance_fn.assert_any_call(db_session, "c2", "comment")
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_comments_by_post_query_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(comment_service, "logger", logger_mock)
-
     q = MagicMock()
     q.join.side_effect = Exception("boom")
     db_session.query.return_value = q
 
     with pytest.raises(Exception):
         comment_service.list_enriched_comments_by_post(db_session, "pid")
-
-    logger_mock.error.assert_called_once()

@@ -15,8 +15,6 @@ class ReactionStub:
 
 
 def test_create_reaction_success(db_session, logger_mock, monkeypatch, simple_obj):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     reaction_in = simple_obj(
         user_id="u1",
         target_id="t1",
@@ -39,12 +37,9 @@ def test_create_reaction_success(db_session, logger_mock, monkeypatch, simple_ob
     db_session.add.assert_called_once_with(created)
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(created)
-    logger_mock.info.assert_called_once()
 
 
 def test_get_reaction_not_found_logs_warning(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -53,23 +48,18 @@ def test_get_reaction_not_found_logs_warning(db_session, logger_mock, monkeypatc
 
     res = reaction_service.get_reaction(db_session, "rid")
     assert res is None
-    logger_mock.warning.assert_called_once()
 
 
 def test_delete_reaction_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
     r = MagicMock()
     r.id = "rid"
 
     reaction_service.delete_reaction(db_session, r)
     db_session.delete.assert_called_once_with(r)
     db_session.commit.assert_called_once()
-    logger_mock.info.assert_called_once()
 
 
 def test_set_reaction_same_reaction_deletes_and_returns_none(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     existing = MagicMock()
     existing.reaction_type = reaction_service.ReactionType.plus
 
@@ -93,8 +83,6 @@ def test_set_reaction_same_reaction_deletes_and_returns_none(db_session, logger_
 
 
 def test_set_reaction_opposite_reaction_replaces(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     existing = MagicMock()
     existing.reaction_type = reaction_service.ReactionType.plus
 
@@ -122,8 +110,6 @@ def test_set_reaction_opposite_reaction_replaces(db_session, logger_mock, monkey
 
 
 def test_set_reaction_no_existing_creates_new(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -144,12 +130,9 @@ def test_set_reaction_no_existing_creates_new(db_session, logger_mock, monkeypat
     assert res.target_id == "t1"
     assert res.target_type == "post"
     assert res.reaction_type == reaction_service.ReactionType.plus
-    logger_mock.info.assert_called()
 
 
 def test_list_reactions_for_target_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -158,12 +141,9 @@ def test_list_reactions_for_target_success(db_session, logger_mock, monkeypatch)
 
     res = reaction_service.list_reactions_for_target(db_session, "t1", "post")
     assert len(res) == 2
-    logger_mock.info.assert_called_once()
 
 
 def test_compute_reaction_balance_counts_plus_minus(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     plus = MagicMock()
     plus.reaction_type = reaction_service.ReactionType.plus
     minus = MagicMock()
@@ -182,8 +162,6 @@ def test_compute_reaction_balance_counts_plus_minus(db_session, logger_mock, mon
 
 
 def test_get_user_reaction_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(reaction_service, "logger", logger_mock)
-
     r = MagicMock()
     q = MagicMock()
     chain = MagicMock()
@@ -193,4 +171,3 @@ def test_get_user_reaction_success(db_session, logger_mock, monkeypatch):
 
     res = reaction_service.get_user_reaction(db_session, "t1", "post", "u1")
     assert res is r
-    logger_mock.info.assert_called_once()

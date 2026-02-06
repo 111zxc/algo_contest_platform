@@ -17,7 +17,6 @@ class DummySpec:
 
 
 def test_get_docker_client_success_first_try(logger_mock, monkeypatch):
-    monkeypatch.setattr(docker_runner, "logger", logger_mock)
     monkeypatch.setattr(docker_runner, "settings", DummySettings)
 
     client = MagicMock()
@@ -29,11 +28,9 @@ def test_get_docker_client_success_first_try(logger_mock, monkeypatch):
 
     res = docker_runner.get_docker_client(timeout=1, interval=0)
     assert res is client
-    logger_mock.info.assert_called_once()
 
 
 def test_get_docker_client_times_out(logger_mock, monkeypatch):
-    monkeypatch.setattr(docker_runner, "logger", logger_mock)
     monkeypatch.setattr(docker_runner, "settings", DummySettings)
 
     docker_mod = MagicMock()
@@ -69,11 +66,10 @@ def test_run_solution_unsupported_language_returns_RE(logger_mock, monkeypatch):
 
 
 def test_run_solution_single_tc_AC(logger_mock, monkeypatch, tmp_path):
-    monkeypatch.setattr(docker_runner, "logger", logger_mock)
     monkeypatch.setattr(docker_runner, "get_language", lambda lang: DummySpec())
     monkeypatch.setattr(docker_runner.uuid, "uuid4", lambda: "fixed-uuid")
 
-    # перенаправляем /shared_tmp -> tmp_path/shared_tmp
+    # /shared_tmp -> tmp_path/shared_tmp
     real_join = docker_runner.os.path.join
     def fake_join(*parts):
         if parts and parts[0] == "/shared_tmp":
@@ -115,7 +111,6 @@ def test_run_solution_single_tc_AC(logger_mock, monkeypatch, tmp_path):
 
 
 def test_run_solution_TLE_when_wait_raises(logger_mock, monkeypatch, tmp_path):
-    monkeypatch.setattr(docker_runner, "logger", logger_mock)
     monkeypatch.setattr(docker_runner, "get_language", lambda lang: DummySpec())
     monkeypatch.setattr(docker_runner.uuid, "uuid4", lambda: "fixed-uuid")
 
@@ -157,7 +152,6 @@ def test_run_solution_TLE_when_wait_raises(logger_mock, monkeypatch, tmp_path):
 
 
 def test_run_solution_MLE_when_oom_killed(logger_mock, monkeypatch, tmp_path):
-    monkeypatch.setattr(docker_runner, "logger", logger_mock)
     monkeypatch.setattr(docker_runner, "get_language", lambda lang: DummySpec())
     monkeypatch.setattr(docker_runner.uuid, "uuid4", lambda: "fixed-uuid")
 

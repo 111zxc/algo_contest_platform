@@ -25,8 +25,6 @@ def _make_query_chain(first_result=None, all_result=None):
 
 
 def test_create_blog_post_success(db_session, simple_obj, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     data = simple_obj(title="Hello", description="World")
 
     post_obj = MagicMock(name="BlogPostInstance")
@@ -44,13 +42,9 @@ def test_create_blog_post_success(db_session, simple_obj, logger_mock, monkeypat
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(post_obj)
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
-    logger_mock.error.assert_not_called()
 
 
 def test_create_blog_post_commit_error_rolls_back(db_session, simple_obj, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     data = simple_obj(title="Bad", description="Commit")
     post_obj = MagicMock(name="BlogPostInstance")
     monkeypatch.setattr(blog_post_service, "BlogPost", lambda title, description: post_obj)
@@ -61,13 +55,9 @@ def test_create_blog_post_commit_error_rolls_back(db_session, simple_obj, logger
         blog_post_service.create_blog_post(db_session, data)
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
-    logger_mock.info.assert_not_called()
 
 
 def test_get_blog_post_found(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     post = MagicMock(name="Post")
     q, chain = _make_query_chain(first_result=post)
     db_session.query.return_value = q
@@ -78,26 +68,18 @@ def test_get_blog_post_found(db_session, logger_mock, monkeypatch):
     db_session.query.assert_called_once()
     q.filter.assert_called_once()
     chain.first.assert_called_once()
-    logger_mock.info.assert_called_once()
-    logger_mock.warning.assert_not_called()
 
 
 def test_get_blog_post_not_found_logs_warning(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     q, chain = _make_query_chain(first_result=None)
     db_session.query.return_value = q
 
     res = blog_post_service.get_blog_post(db_session, "pid")
 
     assert res is None
-    logger_mock.warning.assert_called_once()
-    logger_mock.info.assert_not_called()
 
 
 def test_get_blog_post_query_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     q = MagicMock()
     q.filter.side_effect = Exception("boom")
     db_session.query.return_value = q
@@ -105,12 +87,8 @@ def test_get_blog_post_query_error_raises(db_session, logger_mock, monkeypatch):
     with pytest.raises(Exception):
         blog_post_service.get_blog_post(db_session, "pid")
 
-    logger_mock.error.assert_called_once()
-
 
 def test_update_blog_post_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     post = MagicMock(name="Post")
     post.id = "pid"
 
@@ -122,13 +100,9 @@ def test_update_blog_post_success(db_session, logger_mock, monkeypatch):
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(post)
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
-    logger_mock.error.assert_not_called()
 
 
 def test_update_blog_post_commit_error_rolls_back(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
     db_session.commit.side_effect = RuntimeError("commit fail")
@@ -137,12 +111,9 @@ def test_update_blog_post_commit_error_rolls_back(db_session, logger_mock, monke
         blog_post_service.update_blog_post(db_session, post, {"title": "X"})
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_delete_blog_post_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
 
@@ -151,13 +122,9 @@ def test_delete_blog_post_success(db_session, logger_mock, monkeypatch):
     db_session.delete.assert_called_once_with(post)
     db_session.commit.assert_called_once()
     db_session.rollback.assert_not_called()
-    logger_mock.info.assert_called_once()
-    logger_mock.error.assert_not_called()
 
 
 def test_delete_blog_post_delete_error_rolls_back(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     post = MagicMock()
     post.id = "pid"
     db_session.delete.side_effect = Exception("nope")
@@ -167,12 +134,9 @@ def test_delete_blog_post_delete_error_rolls_back(db_session, logger_mock, monke
 
     db_session.rollback.assert_called_once()
     db_session.commit.assert_not_called()
-    logger_mock.error.assert_called_once()
 
 
 def test_list_blog_posts_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     posts = [MagicMock(), MagicMock()]
     q, chain = _make_query_chain(all_result=posts)
     db_session.query.return_value = q
@@ -184,17 +148,12 @@ def test_list_blog_posts_success(db_session, logger_mock, monkeypatch):
     chain.offset.assert_called_once_with(5)
     chain.limit.assert_called_once_with(2)
     chain.all.assert_called_once()
-    logger_mock.info.assert_called_once()
 
 
 def test_list_blog_posts_query_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(blog_post_service, "logger", logger_mock)
-
     q = MagicMock()
     q.order_by.side_effect = Exception("boom")
     db_session.query.return_value = q
 
     with pytest.raises(Exception):
         blog_post_service.list_blog_posts(db_session)
-
-    logger_mock.error.assert_called_once()

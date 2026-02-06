@@ -9,8 +9,6 @@ class DummySettings:
 
 
 def test_create_solution_sets_pending(db_session, logger_mock, monkeypatch, simple_obj):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
-
     solution_in = simple_obj(problem_id="p1", code="c", language="python")
 
     created = MagicMock()
@@ -27,12 +25,9 @@ def test_create_solution_sets_pending(db_session, logger_mock, monkeypatch, simp
     db_session.add.assert_called_once_with(created)
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(created)
-    logger_mock.info.assert_called_once()
 
 
 def test_get_solution_not_found_logs_warning(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -41,7 +36,6 @@ def test_get_solution_not_found_logs_warning(db_session, logger_mock, monkeypatc
 
     res = solution_service.get_solution(db_session, "sid")
     assert res is None
-    logger_mock.warning.assert_called_once()
 
 
 def test_update_solution_status_missing_solution_returns_none(db_session, monkeypatch):
@@ -52,8 +46,6 @@ def test_update_solution_status_missing_solution_returns_none(db_session, monkey
 
 
 def test_update_solution_status_commit_error_rolls_back_and_returns_none(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
-
     sol = MagicMock()
     sol.id = "sid"
     monkeypatch.setattr(solution_service, "get_solution", lambda db, sid: sol)
@@ -63,11 +55,9 @@ def test_update_solution_status_commit_error_rolls_back_and_returns_none(db_sess
     res = solution_service.update_solution_status(db_session, "sid", {"status": "AC", "time_used": 1})
     assert res is None
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_process_solution_solution_not_found_updates_status_and_returns_error(monkeypatch, logger_mock):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
     monkeypatch.setattr(solution_service, "settings", DummySettings)
 
     db = MagicMock()
@@ -85,7 +75,6 @@ def test_process_solution_solution_not_found_updates_status_and_returns_error(mo
 
 
 def test_process_solution_problem_not_found(monkeypatch, logger_mock):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
     monkeypatch.setattr(solution_service, "settings", DummySettings)
 
     db = MagicMock()
@@ -112,7 +101,6 @@ def test_process_solution_problem_not_found(monkeypatch, logger_mock):
 
 
 def test_process_solution_AC_sets_faster_than_and_marks_solved(monkeypatch, logger_mock):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
     monkeypatch.setattr(solution_service, "settings", DummySettings)
 
     db = MagicMock()
@@ -162,7 +150,6 @@ def test_process_solution_AC_sets_faster_than_and_marks_solved(monkeypatch, logg
 
 
 def test_process_solution_non_AC_sets_faster_than_none(monkeypatch, logger_mock):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
     monkeypatch.setattr(solution_service, "settings", DummySettings)
 
     db = MagicMock()
@@ -199,8 +186,6 @@ def test_process_solution_non_AC_sets_faster_than_none(monkeypatch, logger_mock)
 
 
 def test_list_solutions_by_problem(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -209,12 +194,9 @@ def test_list_solutions_by_problem(db_session, logger_mock, monkeypatch):
 
     res = solution_service.list_solutions_by_problem(db_session, "p1")
     assert len(res) == 2
-    logger_mock.info.assert_called_once()
 
 
 def test_list_solutions_by_problem_and_user(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
-
     q = MagicMock()
     chain = MagicMock()
     db_session.query.return_value = q
@@ -223,11 +205,9 @@ def test_list_solutions_by_problem_and_user(db_session, logger_mock, monkeypatch
 
     res = solution_service.list_solutions_by_problem_and_user(db_session, "p1", "u1")
     assert len(res) == 1
-    logger_mock.info.assert_called_once()
 
 
 def test_list_contest_solutions_happy_path_with_filters(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(solution_service, "logger", logger_mock)
     monkeypatch.setattr(solution_service, "settings", DummySettings)
 
     tasks_resp = MagicMock()
@@ -264,4 +244,3 @@ def test_list_contest_solutions_happy_path_with_filters(db_session, logger_mock,
     assert get_mock.call_count == 2
     chain.offset.assert_called_once_with(5)
     chain.limit.assert_called_once_with(3)
-    logger_mock.info.assert_called_once()

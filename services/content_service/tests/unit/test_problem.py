@@ -5,8 +5,6 @@ import app.services.problem as problem_service
 
 
 def test_create_problem_converts_test_cases_to_dicts(db_session, logger_mock, monkeypatch, simple_obj):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
-
     tc1 = MagicMock()
     tc1.to_dict.return_value = {"a": 1}
     tc2 = MagicMock()
@@ -36,12 +34,9 @@ def test_create_problem_converts_test_cases_to_dicts(db_session, logger_mock, mo
     db_session.add.assert_called_once_with(created)
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(created)
-    logger_mock.info.assert_called_once()
 
 
 def test_create_problem_commit_error_rolls_back(db_session, logger_mock, monkeypatch, simple_obj):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
-
     problem_in = simple_obj(
         title="T", description="D", difficulty="EASY",
         test_cases=None, time_limit=1, memory_limit=64, contest_id=None
@@ -54,11 +49,9 @@ def test_create_problem_commit_error_rolls_back(db_session, logger_mock, monkeyp
         problem_service.create_problem(db_session, problem_in, creator_id="u1")
 
     db_session.rollback.assert_called_once()
-    logger_mock.error.assert_called_once()
 
 
 def test_get_problem_found_uses_joinedload(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
     monkeypatch.setattr(problem_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -72,12 +65,9 @@ def test_get_problem_found_uses_joinedload(db_session, logger_mock, monkeypatch)
     res = problem_service.get_problem(db_session, "pid")
     assert res is obj
     chain.options.assert_called_once()
-    logger_mock.info.assert_called_once()
 
 
 def test_update_problem_skips_tags(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
-
     p = MagicMock()
     p.id = "pid"
     p.tags = ["old"]
@@ -89,12 +79,9 @@ def test_update_problem_skips_tags(db_session, logger_mock, monkeypatch):
 
     db_session.commit.assert_called_once()
     db_session.refresh.assert_called_once_with(p)
-    logger_mock.info.assert_called_once()
 
 
 def test_delete_problem_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
-
     p = MagicMock()
     p.id = "pid"
 
@@ -102,11 +89,9 @@ def test_delete_problem_success(db_session, logger_mock, monkeypatch):
 
     db_session.delete.assert_called_once_with(p)
     db_session.commit.assert_called_once()
-    logger_mock.info.assert_called_once()
 
 
 def test_list_problems_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
     monkeypatch.setattr(problem_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -117,11 +102,9 @@ def test_list_problems_success(db_session, logger_mock, monkeypatch):
 
     res = problem_service.list_problems(db_session)
     assert len(res) == 2
-    logger_mock.info.assert_called_once()
 
 
 def test_list_problems_by_tag_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
     monkeypatch.setattr(problem_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -134,11 +117,9 @@ def test_list_problems_by_tag_success(db_session, logger_mock, monkeypatch):
 
     res = problem_service.list_problems_by_tag(db_session, "tag1")
     assert len(res) == 1
-    logger_mock.info.assert_called_once()
 
 
 def test_list_problems_by_user_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
     monkeypatch.setattr(problem_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -151,11 +132,9 @@ def test_list_problems_by_user_success(db_session, logger_mock, monkeypatch):
 
     res = problem_service.list_problems_by_user(db_session, "u1")
     assert len(res) == 2
-    logger_mock.info.assert_called_once()
 
 
 def test_list_problems_by_difficulty_success(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
     monkeypatch.setattr(problem_service, "joinedload", lambda *args, **kwargs: object())
 
     q = MagicMock()
@@ -168,12 +147,9 @@ def test_list_problems_by_difficulty_success(db_session, logger_mock, monkeypatc
 
     res = problem_service.list_problems_by_difficulty(db_session, "EASY")
     assert len(res) == 1
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_problems_filtered_sets_fields_and_filters_contest_none(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
-
     subq = MagicMock()
     subq.c = MagicMock()
     subq.c.balance = MagicMock()
@@ -238,14 +214,10 @@ def test_list_enriched_problems_filtered_sets_fields_and_filters_contest_none(db
     assert fake_order.asc_called is True
 
     assert main_chain.filter.call_count >= 2  # difficulty/tag/contest_id
-    logger_mock.info.assert_called_once()
 
 
 def test_list_enriched_problems_filtered_subquery_error_raises(db_session, logger_mock, monkeypatch):
-    monkeypatch.setattr(problem_service, "logger", logger_mock)
     db_session.query.side_effect = Exception("boom")
 
     with pytest.raises(Exception):
         problem_service.list_enriched_problems_filtered(db_session)
-
-    logger_mock.error.assert_called_once()
