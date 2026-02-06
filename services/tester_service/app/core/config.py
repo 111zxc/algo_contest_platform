@@ -5,10 +5,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",  # чтобы лишние env не валили загрузку
+        extra="ignore",
     )
 
     PROJECT_NAME: str = "Tester Service"
+
+    LOG_LEVEL: str = "DEBUG"
 
     DATABASE_URL: str = "sqlite:///tester.db"
 

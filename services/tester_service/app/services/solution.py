@@ -32,9 +32,7 @@ def create_solution(db: Session, solution_in: SolutionCreate, user_id: str) -> S
     db.add(solution)
     db.commit()
     db.refresh(solution)
-    logger.info(
-        f"Successfully created solution {solution.id} for problem with id: {solution_in.problem_id} by user with id: {user_id}"
-    )
+    logger.debug("solution_create", extra={"created_by": user_id, "problem_id": str(solution_in.problem_id)})
     return solution
 
 
@@ -51,9 +49,9 @@ def get_solution(db: Session, solution_id: str) -> Solution | None:
     """
     solution = db.query(Solution).filter(Solution.id == solution_id).first()
     if not solution:
-        logger.warning(f"Couldn't get solution by id: {solution_id}")
+        logger.warning("solution_get_notfound", extra={'solution_id': solution_id})
     else:
-        logger.info(f"Succesfully got solution with id {solution_id}")
+        logger.debug("solution_get", extra={'solution_id': solution_id})
     return solution
 
 
@@ -83,10 +81,10 @@ def update_solution_status(
     try:
         db.commit()
         db.refresh(solution)
-        logger.info(f"Succesfully updated solution status with id {solution_id}")
-    except Exception as e:
+        logger.debug("solution_updatestatus", extra={'solution_id': solution_id, 'status': result['status']})
+    except Exception:
         db.rollback()
-        logger.error(f"Error updating solution status for {solution_id}: {str(e)}")
+        logger.exception("solution_updatestatus_failed", extra={'solution_id': solution_id})
         return None
 
     return solution
@@ -114,7 +112,6 @@ def process_solution(solution_id: str) -> dict:
             update_solution_status(
                 db, solution_id, {"status": SolutionStatus.RE, "time_used": 0}
             )
-            logger.error(f"Couldn't process solution {solution_id}: solution not found")
             return {"error": "Solution not found"}
 
         problem_url = f"{settings.CONTENT_SERVICE_URL}/problems/{solution.problem_id}"
@@ -122,9 +119,6 @@ def process_solution(solution_id: str) -> dict:
         if response.status_code != 200:
             update_solution_status(
                 db, solution_id, {"status": SolutionStatus.RE, "time_used": 0}
-            )
-            logger.error(
-                f"Couldn't process solution {solution_id}: Problem not found at {problem_url}"
             )
             return {"error": "Problem not found"}
 
@@ -144,7 +138,6 @@ def process_solution(solution_id: str) -> dict:
         result = run_solution_in_container(
             solution.code, solution.language, test_cases, time_limit, memory_limit
         )
-        logger.info(f"Started processing solution {solution_id}'s code")
 
         if result.get("status") == "AC" and result.get("results"):
             mark_url = (
@@ -154,13 +147,12 @@ def process_solution(solution_id: str) -> dict:
             try:
                 resp = requests.post(mark_url, params=params)
                 if not resp.ok:
-                    logger.warning(
-                        f"Marking problem {solution.problem_id} as solved failed for user {solution.created_by}"
-                    )
-            except Exception as e:
-                logger.error(
-                    f"POST failed for marking problem {solution.problem_id} as solved for user {solution.created_by}: {str(e)}"
-                )
+                    logger.warning("solution_process_warning",
+                                   extra={'detail': 'marking solution as solved failed'})
+            except Exception:
+                logger.exception("solution_process_failed",
+                                 extra={"detail": 'post failed for marking problem solved',
+                                        'solution_id': solution_id})
 
             current_time = result["results"][0]["time_used"]
             percentile = compute_performance_percentile(
@@ -172,11 +164,10 @@ def process_solution(solution_id: str) -> dict:
 
         updated_solution = update_solution_status(db, solution_id, result)
         if updated_solution:
-            logger.info(
-                f"Succesfully updated solution {solution_id}'s status to {result.get('status')}"
-            )
+            logger.debug('solution_process', extra={'solution_id': solution_id})
         else:
-            logger.error(f"Failed to update solution status for {solution_id}")
+            logger.error("solution_process_failed",
+                         extra={'detail': 'failed to update status', 'solution_id': solution_id})
         return result
 
     finally:
@@ -195,7 +186,7 @@ def list_solutions_by_problem(db: Session, problem_id: str) -> list[Solution]:
         list[Solution]: список пользовательских решений к задаче
     """
     solutions = db.query(Solution).filter(Solution.problem_id == problem_id).all()
-    logger.info(f"Got all {len(solutions)} solutions for problem {problem_id}")
+    logger.debug("solution_listproblem", extra={'problem_id': problem_id, 'length': len(solutions)})
     return solutions
 
 
@@ -218,9 +209,8 @@ def list_solutions_by_problem_and_user(
         .filter(Solution.problem_id == problem_id, Solution.created_by == user_id)
         .all()
     )
-    logger.info(
-        f"Got all {len(solutions)} solutions to problem {problem_id} from user {user_id}"
-    )
+    logger.debug('solution_listproblemuser',
+                 extra={"problem_id": problem_id, "user_id": user_id, "length": len(solutions)})
     return solutions
 
 
@@ -237,8 +227,8 @@ def list_contest_solutions(
     try:
         r = requests.get(tasks_url, timeout=5)
         r.raise_for_status()
-    except Exception as e:
-        logger.error(f"Error fetching tasks for contest {contest_id}: {e}")
+    except Exception:
+        logger.exception("solution_listcontest_failed", extra={'contest_id': contest_id})
         raise
     tasks = r.json()
     task_ids = [str(t["id"]) for t in tasks]
@@ -247,8 +237,10 @@ def list_contest_solutions(
     try:
         r = requests.get(parts_url, timeout=5)
         r.raise_for_status()
-    except Exception as e:
-        logger.error(f"Error fetching participants for contest {contest_id}: {e}")
+    except Exception:
+        logger.exception("solution_listcontest_failed",
+                         extra={'detail': 'failed to fetch participants for contest',
+                                'contest_id': contest_id})
         raise
     participants = r.json()
     participant_ids = [u["keycloak_id"] for u in participants]
@@ -263,10 +255,7 @@ def list_contest_solutions(
         q = q.filter(Solution.problem_id == problem_id)
 
     solutions = q.offset(offset).limit(limit).all()
-    logger.info(
-        f"User {owner_id} fetched {len(solutions)} solutions "
-        f"for contest {contest_id} "
-        f"(filter user: {user_id}, problem: {problem_id}, "
-        f"offset={offset}, limit={limit})"
-    )
+    logger.debug('solutions_listcontest',
+                 extra={'contest_id': contest_id, 'user_id': user_id, 'problem_id': problem_id,
+                        'offset': offset, 'limit': limit, 'length': len(solutions)})
     return solutions

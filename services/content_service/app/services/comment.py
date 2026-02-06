@@ -29,13 +29,14 @@ def create_comment(db: Session, comment_in: CommentCreate, user_id: str) -> Comm
         db.add(comment)
         db.commit()
         db.refresh(comment)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't create comment: {str(e)}")
+        logger.exception("comment_create_failed")
         raise
     else:
-        logger.info(
-            f"Successfully created comment {comment.id} from {comment.created_by} to {comment.post_id}"
+        logger.debug(
+            "comment_create",
+            extra={'comment_id': str(comment.id), "post_id": str(comment.post_id), 'created_by': str(comment.created_by)}
         )
     return comment
 
@@ -53,14 +54,17 @@ def get_comment(db: Session, comment_id: str) -> Comment | None:
     """
     try:
         result = db.query(Comment).filter(Comment.id == comment_id).first()
-    except Exception as e:
-        logger.error(f"Error getting comment with id {comment_id}: {str(e)}")
+    except Exception:
+        logger.error("comment_get_failed",
+                     extra={'comment_id': comment_id})
         raise
     else:
         if result is None:
-            logger.warning(f"Couldn't get comment {comment_id}")
+            logger.warning("comment_notfound",
+                           extra={'comment_id': comment_id})
         else:
-            logger.info(f"Successfully got comment {comment_id}")
+            logger.debug("comment_get",
+                        extra={'comment_id': comment_id})
     return result
 
 
@@ -81,12 +85,14 @@ def update_comment(db: Session, comment: Comment, update_data: dict) -> Comment:
     try:
         db.commit()
         db.refresh(comment)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't update comment {comment.id}: {str(e)}")
+        logger.exception("comment_update_failed",
+                         extra={'comment_id': str(comment.id)})
         raise
     else:
-        logger.info(f"Successfully updated comment {comment.id}")
+        logger.debug("comment_update",
+                     extra={'comment_id': str(comment.id), 'created_by': str(comment.created_by)})
     return comment
 
 
@@ -104,12 +110,14 @@ def delete_comment(db: Session, comment: Comment) -> None:
     try:
         db.delete(comment)
         db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't delete comment {comment.id}: {str(e)}")
+        logger.exception("comment_delete_failed",
+                         extra={'comment_id': str(comment.id), 'created_by': str(comment.created_by)})
         raise
     else:
-        logger.info(f"Successfully deleted comment {comment.id}")
+        logger.debug("comment_delete",
+                     extra={'comment_id': str(comment.id), 'created_by': str(comment.created_by)})
 
 
 def list_comments_by_post(db: Session, post_id: str) -> list[Comment]:
@@ -125,11 +133,13 @@ def list_comments_by_post(db: Session, post_id: str) -> list[Comment]:
     """
     try:
         comments = db.query(Comment).filter(Comment.post_id == post_id).all()
-    except Exception as e:
-        logger.error(f"Couldn't get comments for post {post_id}: {str(e)}")
+    except Exception:
+        logger.exception("comment_list_failed",
+                         extra={'post_id': post_id})
         raise
     else:
-        logger.info(f"Successfully got all {len(comments)} comments for post {post_id}")
+        logger.debug("comment_list",
+                     extra={'post_id': post_id, 'length': len(comments)})
     return comments
 
 
@@ -146,13 +156,13 @@ def list_comments_by_user(db: Session, keycloak_id: str) -> list[Comment]:
     """
     try:
         comments = db.query(Comment).filter(Comment.created_by == keycloak_id).all()
-    except Exception as e:
-        logger.error(f"Couldn't get comments for user {keycloak_id}: {str(e)}")
+    except Exception:
+        logger.exception("comment_list_failed",
+                         extra={'user_id': keycloak_id})
         raise
     else:
-        logger.info(
-            f"Successfully got all {len(comments)} comments for user {keycloak_id}"
-        )
+        logger.debug("comment_list",
+                     extra={'user_id': keycloak_id, 'length': len(comments)})
     return comments
 
 
@@ -181,8 +191,9 @@ def list_enriched_comments_by_post(
             .limit(limit)
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't get enriched comments for post {post_id}: {str(e)}")
+    except Exception:
+        logger.exception("comment_listenriched_failed",
+                         extra={'post_id': post_id, 'offset': offset, 'limit': limit})
         raise
 
     enriched = []
@@ -191,7 +202,6 @@ def list_enriched_comments_by_post(
         balance = compute_reaction_balance(db, str(comment.id), "comment")
         setattr(comment, "reaction_balance", balance)
         enriched.append(comment)
-    logger.info(
-        f"Successfully got {len(enriched)} enriched comments for post {post_id}"
-    )
+    logger.debug("comment_listenriched",
+                 extra={'post_id': post_id, 'offset': offset, 'limit': limit, 'length': len(enriched)})
     return enriched

@@ -32,12 +32,13 @@ def create_post(db: Session, post_in: PostCreate, user_id: str) -> Post:
         db.add(post)
         db.commit()
         db.refresh(post)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't create post: {str(e)}")
+        logger.exception("post_create_failed")
         raise
     else:
-        logger.info(f"Successfully created post with id: {post.id}")
+        logger.debug("post_create",
+                     extra={'post_id': str(post.id)})
     return post
 
 
@@ -59,14 +60,17 @@ def get_post(db: Session, post_id: str) -> Post | None:
             .options(joinedload(Post.tags))
             .first()
         )
-    except Exception as e:
-        logger.error(f"Error getting post with id {post_id}: {str(e)}")
+    except Exception:
+        logger.exception("post_get_failed",
+                         extra={"post_id": post_id})
         raise
     else:
         if result is None:
-            logger.warning(f"Couldn't get post with id: {post_id}")
+            logger.warning("post_get_notfound",
+                           extra={"post_id": post_id})
         else:
-            logger.info(f"Successfully got post with id: {post_id}")
+            logger.debug("post_get",
+                         extra={'post_id': post_id})
     return result
 
 
@@ -88,12 +92,14 @@ def update_post(db: Session, post: Post, update_data: dict) -> Post:
     try:
         db.commit()
         db.refresh(post)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't update post with id: {post.id}: {str(e)}")
+        logger.exception("post_update_failed",
+                         extra={'post_id': str(post.id)})
         raise
     else:
-        logger.info(f"Successfully updated post with id: {post.id}")
+        logger.debug("post_update",
+                     extra={'post_id': str(post.id)})
     return post
 
 
@@ -111,12 +117,14 @@ def delete_post(db: Session, post: Post) -> None:
     try:
         db.delete(post)
         db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't delete post with id: {post.id}: {str(e)}")
+        logger.exception("post_delete_failed",
+                         extra={'post_id': str(post.id)})
         raise
     else:
-        logger.info(f"Successfully deleted post with id: {post.id}")
+        logger.debug("post_delete",
+                    extra={"post_id": str(post.id)})
 
 
 def list_posts(db: Session) -> list[Post]:
@@ -131,11 +139,12 @@ def list_posts(db: Session) -> list[Post]:
     """
     try:
         posts = db.query(Post).options(joinedload(Post.tags)).all()
-    except Exception as e:
-        logger.error(f"Couldn't get all posts: {str(e)}")
+    except Exception:
+        logger.exception("post_list_failed")
         raise
     else:
-        logger.info(f"Successfully got all {len(posts)} posts")
+        logger.debug("post_list",
+                     extra={'length': len(posts)})
     return posts
 
 
@@ -157,11 +166,13 @@ def list_posts_by_user(db: Session, keycloak_id: str) -> list[Post]:
             .filter(Post.created_by == keycloak_id)
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't get posts by user {keycloak_id}: {str(e)}")
+    except Exception:
+        logger.exception("post_listuser_failed",
+                         extra={'user_id': keycloak_id})
         raise
     else:
-        logger.info(f"Successfully got all {len(posts)} posts by user {keycloak_id}")
+        logger.debug("post_listuser",
+                     extra={'user_id': keycloak_id, 'length': len(posts)})
     return posts
 
 
@@ -183,11 +194,13 @@ def list_posts_by_problem(db: Session, problem_id: str) -> list[Post]:
             .filter(Post.problem_id == problem_id)
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't get posts by problem {problem_id}: {str(e)}")
+    except Exception:
+        logger.exception("post_listproblem_failed",
+                         extra={'problem_id': problem_id})
         raise
     else:
-        logger.info(f"Successfully got all {len(posts)} posts by problem {problem_id}")
+        logger.debug("post_listproblem",
+                     extra={'problem_id': problem_id, 'length': len(posts)})
     return posts
 
 
@@ -209,11 +222,13 @@ def list_posts_by_tag(db: Session, tag_id: str) -> list[Post]:
             .filter(Post.tags.any(id=tag_id))
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't get posts by tag {tag_id}: {str(e)}")
+    except Exception:
+        logger.exception("post_listtag_failed",
+                         extra={"tag_id": tag_id})
         raise
     else:
-        logger.info(f"Successfully got all {len(posts)} posts by tag {tag_id}")
+        logger.debug("post_listtag",
+                     extra={'tag_id': tag_id, 'length': len(posts)})
     return posts
 
 
@@ -258,8 +273,10 @@ def list_enriched_posts_by_problem(
             .group_by(Reaction.target_id)
             .subquery()
         )
-    except Exception as e:
-        logger.error(f"Couldn't compute reaction subquery: {str(e)}")
+    except Exception:
+        logger.exception("post_listenrichedproblem_failed",
+                         extra={'detail': 'could not compute reaction subquery',
+                                'problem_id': problem_id})
         raise
 
     try:
@@ -278,8 +295,9 @@ def list_enriched_posts_by_problem(
                 query = query.order_by(func.coalesce(reaction_subq.c.balance, 0).desc())
         query = query.offset(offset).limit(limit)
         results = query.all()
-    except Exception as e:
-        logger.error(f"Couldn't list enriched posts: {str(e)}")
+    except Exception:
+        logger.exception("post_listenrichedproblem_failed",
+                         extra={'problem_id': problem_id})
         raise
 
     enriched = []
@@ -287,7 +305,6 @@ def list_enriched_posts_by_problem(
         setattr(post, "author_display_name", display_name)
         setattr(post, "reaction_balance", balance if balance is not None else 0)
         enriched.append(post)
-    logger.info(
-        f"Successfully got {len(enriched)} enriched posts for problem {problem_id}"
-    )
+    logger.debug("post_listenrichedproblem",
+                 extra={"problem_id": problem_id, "length": len(enriched)})
     return enriched

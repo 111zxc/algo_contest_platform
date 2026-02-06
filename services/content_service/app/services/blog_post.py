@@ -21,12 +21,14 @@ def create_blog_post(db: Session, data: BlogPostCreate) -> BlogPost:
         db.add(post)
         db.commit()
         db.refresh(post)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't create blog post with title {data.title}: {str(e)}")
+        logger.exception("blogpost_create_failed",
+                         extra={"title": data.title})
         raise
     else:
-        logger.info(f"Succesfully created blog post {data.title}")
+        logger.debug("blogpost_created",
+                    extra={"title": data.title})
     return post
 
 
@@ -43,14 +45,17 @@ def get_blog_post(db: Session, post_id: str) -> BlogPost | None:
     """
     try:
         result = db.query(BlogPost).filter(BlogPost.id == post_id).first()
-    except Exception as e:
-        logger.error(f"Error getting blog post by id {post_id}: {str(e)}")
+    except Exception:
+        logger.exception("blogpost_get_failed",
+                         extra={"blogpost_id": str(post_id)})
         raise
 
     if result is None:
-        logger.warning(f"Couldn't get blog post by id {post_id}")
+        logger.warning("blogpost_notfound",
+                       extra={"blogpost_id": str(post_id)})
     else:
-        logger.info(f"Succesfully got blog post {post_id}")
+        logger.debug("blogpost_get",
+                    extra={"blogpost_id": str(post_id)})
     return result
 
 
@@ -71,12 +76,14 @@ def update_blog_post(db: Session, post: BlogPost, data: dict) -> BlogPost:
     try:
         db.commit()
         db.refresh(post)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't update blog post {post.id}: {str(e)}")
+        logger.exception("blogpost_update_failed",
+                         extra={"blogpost_id": str(post.id)})
         raise
     else:
-        logger.info(f"Succesfully updated blog post {post.id}")
+        logger.debug("blogpost_update",
+                    extra={'blogpost_id': str(post.id)})
     return post
 
 
@@ -93,12 +100,14 @@ def delete_blog_post(db: Session, post: BlogPost) -> None:
     """
     try:
         db.delete(post)
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Couldn't delete blog post {post.id}: {str(e)}")
+        logger.exception('blogpost_delete_failed',
+                         extra={'blogpost_id': {post.id}})
         raise
     else:
-        logger.info(f"Succesfully deleted blog post {post.id}")
+        logger.debug("blogpost_delete",
+                     extra={'blogpost_title': post.title})
     db.commit()
 
 
@@ -122,9 +131,10 @@ def list_blog_posts(db: Session, offset: int = 0, limit: int = 10) -> list[BlogP
             .limit(limit)
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't list blog posts: {str(e)}")
+    except Exception:
+        logger.exception("blogpost_list_failed")
         raise
     else:
-        logger.info(f"Succesfully got {len(result)} blog posts")
+        logger.debug("blogpost_list",
+                     extra={'length':len(result)})
     return result

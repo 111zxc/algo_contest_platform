@@ -23,11 +23,13 @@ def create_tag(db: Session, tag_in: TagCreate) -> Tag:
         db.add(tag)
         db.commit()
         db.refresh(tag)
-    except Exception as e:
-        logger.error(f"Couldn't create tag {tag.name}: {str(e)}")
+    except Exception:
+        logger.exception("tag_create_failed",
+                         extra={"tag_name": tag_in.name})
         raise
     else:
-        logger.info(f"Successfully created tag {tag.name}")
+        logger.debug("tag_create",
+                     extra={'tag_name': tag_in.name})
     return tag
 
 
@@ -44,9 +46,10 @@ def get_tag(db: Session, tag_id: str) -> Tag | None:
     """
     result = db.query(Tag).filter(Tag.id == tag_id).first()
     if result is None:
-        logger.warning(f"Couldn't get tag with id: {tag_id}")
+        logger.warning("tag_get_notfound",
+                       extra={'tag_id': tag_id})
     else:
-        logger.info(f"Succesfully got tag with id: {tag_id}")
+        logger.debug("tag_get", extra={'tag_id': tag_id})
     return result
 
 
@@ -67,11 +70,11 @@ def update_tag(db: Session, tag: Tag, update_data: dict) -> Tag:
     try:
         db.commit()
         db.refresh(tag)
-    except Exception as e:
-        logger.error(f"Couldn't update tag {tag.name}: {str(e)}")
+    except Exception:
+        logger.exception("tag_update_failed", extra={'tag_id': str(tag.id)})
         raise
     else:
-        logger.info(f"Succesfully updated tag {tag.name} with id {tag.id}")
+        logger.debug("tag_update", extra={'tag_id': str(tag.id)})
     return tag
 
 
@@ -89,11 +92,11 @@ def delete_tag(db: Session, tag: Tag) -> None:
     try:
         db.delete(tag)
         db.commit()
-    except Exception as e:
-        logger.error(f"Couldn't delete tag {tag.name}: {str(e)}")
+    except Exception:
+        logger.error("tag_delete_failed", extra={"tag_id": str(tag.id)})
         raise
     else:
-        logger.info(f"Succesfully deleted tag {tag.name}")
+        logger.debug("tag_delete", extra={"tag_name": tag.name})
 
 
 def get_tags(db: Session) -> list[Tag]:
@@ -108,9 +111,9 @@ def get_tags(db: Session) -> list[Tag]:
     """
     try:
         tags = db.query(Tag).all()
-    except Exception as e:
-        logger.error(f"Couldn't get all tags: {str(e)}")
+    except Exception:
+        logger.exception("tag_list_failed")
         raise
     else:
-        logger.info(f"Succesfully got all {len(tags)} tags")
+        logger.debug("tag_list", extra={'length': len(tags)})
     return tags

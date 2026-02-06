@@ -26,14 +26,13 @@ def create_reaction(db: Session, reaction_in: ReactionCreate) -> Reaction:
         db.add(reaction)
         db.commit()
         db.refresh(reaction)
-    except Exception as e:
-        logger.error(
-            f"Couldn't create reaction for {reaction.target_type} with id: {reaction.target_id} by {reaction.created_by}: {str(e)}"
-        )
+    except Exception:
+        logger.exception('reaction_create_failed',
+                         extra={'target_type': reaction_in.target_type, 'created_by': str(reaction_in.created_by)})
         raise
     else:
-        logger.info(
-            f"Successfully created reaction for {reaction.target_type} with id: {reaction.target_id} by {reaction.created_by}"
+        logger.debug('reaction_create',
+                     extra={'reaction_type': reaction.target_type, 'created_by': str(reaction.created_by)}
         )
     return reaction
 
@@ -51,14 +50,17 @@ def get_reaction(db: Session, reaction_id: str) -> Reaction | None:
     """
     try:
         result = db.query(Reaction).filter(Reaction.id == reaction_id).first()
-    except Exception as e:
-        logger.error(f"Error getting reaction with id {reaction_id}: {str(e)}")
+    except Exception:
+        logger.exception("reaction_get_failed",
+                         extra={'reaction_id': reaction_id})
         raise
     else:
         if result is None:
-            logger.warning(f"Couldn't get reaction with id {reaction_id}")
+            logger.warning("reaction_get_notfound",
+                           extra={"reaction_id": reaction_id})
         else:
-            logger.info(f"Successfully got reaction with id {reaction_id}")
+            logger.debug("reaction_get",
+                         extra={'reaction_id': reaction_id})
         return result
 
 
@@ -115,22 +117,21 @@ def set_reaction(
             )
             .first()
         )
-    except Exception as e:
-        logger.error(
-            f"Error fetching existing reaction for {target_type} with id: {target_id} by user {user_id}: {str(e)}"
-        )
+    except Exception:
+        logger.exception("reaction_set_failed",
+                         extra={'target_type': target_type, "target_id": target_id, "user_id": user_id})
         raise
 
-    # Если реакция существует
+    # if reaction exists
     if existing_reaction:
         if existing_reaction.reaction_type == reaction_type:
             try:
                 db.delete(existing_reaction)
                 db.commit()
-            except Exception as e:
-                logger.error(
-                    f"Couldn't remove existing reaction for {target_type} with id: {target_id} by user {user_id}: {str(e)}"
-                )
+            except Exception:
+                logger.exception("reaction_set_failed",
+                                 extra={'detail': 'could not remove existing reaction',
+                                        'target_id': target_id, "target_type": target_type, "user_id": user_id})
                 raise
             return None
 
@@ -138,10 +139,10 @@ def set_reaction(
             try:
                 db.delete(existing_reaction)
                 db.commit()
-            except Exception as e:
-                logger.error(
-                    f"Couldn't update reaction for {target_type} with id: {target_id} by user {user_id}: {str(e)}"
-                )
+            except Exception:
+                logger.exception("reaction_set_failed",
+                                 extra={'detail': 'could not update existing reaction',
+                                        'target_id': target_id, "target_type": target_type, "user_id": user_id})
                 raise
             try:
                 new_reaction = Reaction(
@@ -153,14 +154,14 @@ def set_reaction(
                 db.add(new_reaction)
                 db.commit()
                 db.refresh(new_reaction)
-            except Exception as e:
-                logger.error(
-                    f"Couldn't create new reaction for {target_type} with id: {target_id} by user {user_id}: {str(e)}"
-                )
+            except Exception:
+                logger.exception("reaction_set_failed",
+                                 extra={'detail': 'could not create new reaction',
+                                        'target_id': target_id, "target_type": target_type, "user_id": user_id})
                 raise
             return new_reaction
 
-    # Если реакции нет, создаем новую
+    # create
     try:
         new_reaction = Reaction(
             created_by=user_id,
@@ -172,14 +173,12 @@ def set_reaction(
         db.commit()
         db.refresh(new_reaction)
     except Exception as e:
-        logger.error(
-            f"Couldn't set new reaction for {target_type} with id: {target_id} by user {user_id}: {str(e)}"
-        )
+        logger.exception("reaction_set_failed",
+                         extra={'target_id': target_id, "target_type": target_type, "user_id": user_id})
         raise
     else:
-        logger.info(
-            f"Successfully set new reaction for {target_type} with id: {target_id} by {user_id}"
-        )
+        logger.debug("reaction_set",
+                     extra={'target_id': target_id, "target_type": target_type, "user_id": user_id})
     return new_reaction
 
 
@@ -205,15 +204,13 @@ def list_reactions_for_target(
             )
             .all()
         )
-    except Exception as e:
-        logger.error(
-            f"Couldn't get reactions for {target_type} with id: {target_id}: {str(e)}"
-        )
+    except Exception:
+        logger.exception("reactions_list_failed",
+                         extra={'target_type': target_type, 'target_id': target_id})
         raise
     else:
-        logger.info(
-            f"Successfully got all {len(reactions)} reactions for {target_type} with id: {target_id}"
-        )
+        logger.debug("reactions_list",
+                     extra={'target_type': target_type, 'target_id': target_id, 'length': len(reactions)})
     return reactions
 
 
@@ -237,10 +234,9 @@ def compute_reaction_balance(db: Session, target_id: str, target_type: str) -> i
             )
             .all()
         )
-    except Exception as e:
-        logger.error(
-            f"Couldn't compute reaction balance for {target_type} with id: {target_id}: {str(e)}"
-        )
+    except Exception:
+        logger.exception("reaction_compute_failed",
+                         extra={'target_type': target_type, 'target_id': target_id})
         raise
     balance = 0
     for r in reactions:
@@ -248,9 +244,8 @@ def compute_reaction_balance(db: Session, target_id: str, target_type: str) -> i
             balance += 1
         elif r.reaction_type == ReactionType.minus:
             balance -= 1
-    logger.info(
-        f"Successfully computed reaction balance ({balance}) for {target_type} {target_id}"
-    )
+    logger.debug("reaction_compute",
+                 extra={'balance': balance, 'target_type': target_type, 'target_id': target_id})
     return balance
 
 
@@ -279,13 +274,11 @@ def get_user_reaction(
             )
             .first()
         )
-    except Exception as e:
-        logger.error(
-            f"Couldn't get user reaction for {target_type} with id: {target_id} by user {user_id}: {str(e)}"
-        )
+    except Exception:
+        logger.exception("reaction_getuser_failed",
+                         extra={'target_type': target_type, 'target_id': target_id, 'user_id': user_id})
         raise
     else:
-        logger.info(
-            f"Succesfully got user {user_id}'s reaction to {target_type} {target_id}"
-        )
+        logger.debug("reaction_getuser",
+                     extra={'user_id': user_id, 'target_type': target_type, 'target_id': target_id})
     return reaction

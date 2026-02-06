@@ -19,19 +19,16 @@ def compute_performance_percentile(
     Returns:
         float: процент "быстрее, чем N% решений"
     """
-    # Всего засчитанных решений к задаче
     total = (
         db.query(Solution)
         .filter(Solution.problem_id == problem_id, Solution.status == SolutionStatus.AC)
         .count()
     )
 
-    # Если это первое засчитанное решение, то быстрее чем 100%
     if total == 0:
-        logger.debug(f"No accepted solutions found for {problem_id}. Returning 100.0")
+        logger.debug("analytics_compute", extra={'problem_id': problem_id, 'detail': 'first solution'})
         return 100.0
 
-    # Количество решений, медленнее чем данное
     slower = (
         db.query(Solution)
         .filter(
@@ -42,9 +39,6 @@ def compute_performance_percentile(
         .count()
     )
 
-    # Процент решений медленнее
     percentile = (slower / total) * 100
-    logger.info(
-        f"Succesfully computed performance for problem with id: {problem_id} with time: {current_time}: {percentile}"
-    )
+    logger.debug('analytics_compute', extra={'problem_id': problem_id, 'time': current_time, 'percentile': percentile})
     return percentile

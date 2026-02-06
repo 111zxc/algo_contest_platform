@@ -4,5 +4,5 @@ from app.core.logger import logger
 
 @celery_app.task(name="process_solution_task")
 def process_solution_task(solution_id: str) -> None:
-    logger.info(f"Worker got solution_id={solution_id}")
+    logger.info("worker_fetchsolution", extra={'solution_id': solution_id})
     process_solution(solution_id)

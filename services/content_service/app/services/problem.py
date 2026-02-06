@@ -40,12 +40,14 @@ def create_problem(db: Session, problem_in: ProblemCreate, creator_id: str) -> P
         db.add(problem)
         db.commit()
         db.refresh(problem)
-    except Exception as e:
-        logger.error(f"Couldn't create problem: {str(e)}")
+    except Exception:
+        logger.exception("problem_create_failed",
+                         extra={'owner_id': creator_id})
         db.rollback()
         raise
     else:
-        logger.info(f"Successfully created problem with id: {problem.id}")
+        logger.debug("problem_create",
+                     extra={'problem_id': str(problem.id)})
     return problem
 
 
@@ -67,14 +69,17 @@ def get_problem(db: Session, problem_id: str) -> Problem | None:
             .options(joinedload(Problem.tags))
             .first()
         )
-    except Exception as e:
-        logger.error(f"Error fetching problem with id {problem_id}: {str(e)}")
+    except Exception:
+        logger.exception("problem_get_failed",
+                         extra={'problem_id': problem_id})
         raise
     else:
         if result is None:
-            logger.warning(f"Couldn't get problem by id: {problem_id}")
+            logger.warning("problem_get_notfound",
+                           extra={'problem_id': problem_id})
         else:
-            logger.info(f"Successfully got problem with id: {problem_id}")
+            logger.debug("problem_get",
+                         extra={'problem_id': problem_id})
     return result
 
 
@@ -96,12 +101,14 @@ def update_problem(db: Session, problem: Problem, update_data: dict) -> Problem:
     try:
         db.commit()
         db.refresh(problem)
-    except Exception as e:
-        logger.error(f"Couldn't update problem with id: {problem.id}: {str(e)}")
+    except Exception:
+        logger.exception("problem_update_failed",
+                         extra={'problem_id': str(problem.id), 'created_by': str(problem.created_by)})
         db.rollback()
         raise
     else:
-        logger.info(f"Successfully updated problem with id: {problem.id}")
+        logger.debug("problem_update",
+                     extra={'problem_id': str(problem.id)})
     return problem
 
 
@@ -119,12 +126,14 @@ def delete_problem(db: Session, problem: Problem) -> None:
     try:
         db.delete(problem)
         db.commit()
-    except Exception as e:
-        logger.error(f"Couldn't delete problem with id: {problem.id}: {str(e)}")
+    except Exception:
+        logger.exception("problem_delete_failed",
+                         extra={'problem_id': str(problem.id), 'created_by': str(problem.created_by)})
         db.rollback()
         raise
     else:
-        logger.info(f"Successfully deleted problem with id: {problem.id}")
+        logger.debug("problem_delete",
+                     extra={'problem_id': str(problem.id)})
 
 
 def list_problems(db: Session) -> list[Problem]:
@@ -139,11 +148,12 @@ def list_problems(db: Session) -> list[Problem]:
     """
     try:
         problems = db.query(Problem).options(joinedload(Problem.tags)).all()
-    except Exception as e:
-        logger.error(f"Couldn't list all problems: {str(e)}")
+    except Exception:
+        logger.exception("problem_list_failed")
         raise
     else:
-        logger.info(f"Successfully listed all {len(problems)} problems")
+        logger.debug("problem_list",
+                     extra={'length': len(problems)})
     return problems
 
 
@@ -165,11 +175,13 @@ def list_problems_by_tag(db: Session, tag_id: str) -> list[Problem]:
             .filter(Problem.tags.any(id=tag_id))
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't list problems by tag {tag_id}: {str(e)}")
+    except Exception:
+        logger.exception("problem_listtag_failed",
+                         extra={'tag_id': tag_id})
         raise
     else:
-        logger.info(f"Successfully listed all {len(problems)} problems by tag {tag_id}")
+        logger.debug("problem_listtag",
+                     extra={'tag_id': tag_id, 'length': len(problems)})
     return problems
 
 
@@ -191,13 +203,13 @@ def list_problems_by_user(db: Session, user_id: str) -> list[Problem]:
             .filter(Problem.created_by == user_id)
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't list problems by user {user_id}: {str(e)}")
+    except Exception:
+        logger.exception("problem_listuser_failed",
+                         extra={'user_id': user_id, 'length': len(problems)})
         raise
     else:
-        logger.info(
-            f"Successfully listed all {len(problems)} problems by user {user_id}"
-        )
+        logger.debug("problem_listuser",
+                     extra={'user_id': user_id, 'length': len(problems)})
     return problems
 
 
@@ -219,13 +231,13 @@ def list_problems_by_difficulty(db: Session, difficulty: str) -> list[Problem]:
             .filter(Problem.difficulty == difficulty)
             .all()
         )
-    except Exception as e:
-        logger.error(f"Couldn't list problems by difficulty {difficulty}: {str(e)}")
+    except Exception:
+        logger.exception("problems_listdifficulty_failed",
+                         extra={'difficulty': difficulty})
         raise
     else:
-        logger.info(
-            f"Successfully listed all {len(problems)} problems by difficulty: {difficulty}"
-        )
+        logger.debug('problems_listdifficulty',
+                     extra={'difficulty': difficulty, 'length': len(problems)})
     return problems
 
 
@@ -270,8 +282,9 @@ def list_enriched_problems_filtered(
             .group_by(Reaction.target_id)
             .subquery()
         )
-    except Exception as e:
-        logger.error(f"Couldn't compute reaction subquery: {str(e)}")
+    except Exception:
+        logger.exception("problem_listenriched_failed",
+                     extra={'detail': 'could not compute reaction subquery'})
         raise
 
     try:
@@ -295,8 +308,8 @@ def list_enriched_problems_filtered(
 
         query = query.offset(offset).limit(limit)
         results = query.all()
-    except Exception as e:
-        logger.error(f"Couldn't get enriched problems: {str(e)}")
+    except Exception:
+        logger.exception("problem_listenriched_failed")
         raise
 
     enriched = []
@@ -304,5 +317,6 @@ def list_enriched_problems_filtered(
         setattr(problem, "author_display_name", display_name)
         setattr(problem, "reaction_balance", balance if balance is not None else 0)
         enriched.append(problem)
-    logger.info(f"Successfully got {len(enriched)} problems")
+    logger.debug("problem_listenriched",
+                 extra={'length': len(enriched)})
     return enriched

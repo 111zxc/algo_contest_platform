@@ -1,4 +1,5 @@
 import requests
+
 from fastapi import HTTPException, status
 
 from app.core.config import settings
@@ -28,15 +29,15 @@ def get_keycloak_admin_token() -> str:
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     try:
         response = requests.post(url, data=data, headers=headers)
-    except Exception as e:
-        logger.error(f"Error getting keycloak admin token: {str(e)}")
+    except Exception:
+        logger.exception("keycloak_admintoken_failed")
         raise
     if response.status_code != 200:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unable to obtain admin token from Keycloak: {response.text}",
         )
-    logger.debug("Successfully got keycloak admin token")
+    logger.debug("keycloak_admintoken")
     return response.json()["access_token"]
 
 
@@ -61,22 +62,25 @@ def register_user_in_keycloak(user_data: dict, admin_token: str) -> str:
     }
     try:
         response = requests.post(url, json=user_data, headers=headers)
-    except Exception as e:
-        logger.error(f"Error registering user in keycloak API: {str(e)}")
+    except Exception:
+        logger.exception("keycloak_registeruser_failed")
         raise
     if response.status_code not in (201, 204):
-        logger.warning(f"Wrong status code from keycloak: {response.status_code}")
+        logger.warning("keycloak_registeruser",
+                       extra={'detail': 'wrong status code', 'status_code': response.status_code})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Keycloak registration failed: {response.text}",
         )
     loc = response.headers.get("Location")
     if not loc:
-        logger.warning("Keycloak did not return a location header.")
+        logger.warning("keycloak_registeruser",
+                       extra={'detail': 'keycloak returned no location header'})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Keycloak did not return a location header.",
         )
     keycloak_id = loc.rstrip("/").split("/")[-1]
-    logger.info(f"Successfully registered keycloak user with keycloak_id {keycloak_id}")
+    logger.debug("keycloak_registeruser",
+                 extra={'keycloak_id': keycloak_id})
     return keycloak_id

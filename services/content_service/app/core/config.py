@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Content Service"
 
+    LOG_LEVEL: str = "DEBUG"
+
     DATABASE_URL: str = "12345"
 
     KEYCLOAK_URL: str = "http://keycloak:8080"

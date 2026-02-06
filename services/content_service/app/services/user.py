@@ -33,13 +33,11 @@ def create_user(db: Session, user_in: UserCreate) -> User:
         db.add(user)
         db.commit()
         db.refresh(user)
-    except Exception as e:
-        logger.error(f"Couldn't save newly created user {user.username}: {str(e)}")
+    except Exception:
+        logger.exception('user_create_failed')
         raise
     else:
-        logger.info(
-            f"Successfully created user {user.username} with id: {user.keycloak_id}"
-        )
+        logger.debug('user_create', extra={'user_id': str(user.keycloak_id)})
     return user
 
 
@@ -57,18 +55,18 @@ def get_user(db: Session, keycloak_id: str) -> User | None:
     """
     result = db.query(User).filter(User.keycloak_id == keycloak_id).first()
     if result is None:
-        logger.warning(f"Couldn't find user with id {keycloak_id}")
+        logger.warning("user_get_notfound", extra={'user_id': keycloak_id})
     else:
-        logger.info(f"Successfully got user with id {keycloak_id}")
+        logger.debug("user_get", extra={"user_id": keycloak_id})
     return result
 
 
 def get_user_by_username(db: Session, username: str) -> User | None:
     user = db.query(User).filter(User.username == username).first()
     if not user:
-        logger.warning(f"Couldn't find user by username {username}")
+        logger.warning("user_getusername_notfound", extra={'username': username})
         return None
-    logger.info(f"Successfully found user by username {username}")
+    logger.debug("user_getusername", extra={'username': username})
     return user
 
 
@@ -88,15 +86,11 @@ def update_user(db: Session, user: User, update_data: dict) -> User:
     try:
         db.commit()
         db.refresh(user)
-    except Exception as e:
-        logger.error(
-            f"Couldn't save updated user {user.username} with id {user.keycloak_id}: {str(e)}"
-        )
+    except Exception:
+        logger.exception("user_update_failed", extra={"user_id": str(user.keycloak_id)})
         raise
     else:
-        logger.info(
-            f"Succesfully updated user {user.username} with id: {user.keycloak_id}"
-        )
+        logger.debug("user_update", extra={"user_id": str(user.keycloak_id)})
     return user
 
 
@@ -114,15 +108,11 @@ def delete_user(db: Session, user: User) -> None:
     try:
         db.delete(user)
         db.commit()
-    except Exception as e:
-        logger.error(
-            f"Couldn't delete user {user.keycloak_id} {user.username}: {str(e)}"
-        )
+    except Exception:
+        logger.exception("user_delete_failed", extra={"user_id": str(user.keycloak_id)})
         raise
     else:
-        logger.info(
-            f"Succesfully deleted user {user.username} with id: {user.keycloak_id}"
-        )
+        logger.debug("user_delete", extra={"user_id": str(user.keycloak_id)})
 
 
 def get_users(db: Session) -> list[User]:
@@ -137,13 +127,12 @@ def get_users(db: Session) -> list[User]:
     """
     try:
         users = db.query(User).all()
-    except Exception as e:
-        logger.error(f"Couldn't get all users: {str(e)}")
+    except Exception:
+        logger.exception("user_list_failed")
         raise
     else:
-        logger.info(f"Succesfully got all {len(users)} users")
-    return db.query(User).all()
-
+        logger.debug("user_list", extra={'length': len(users)})
+    return users
 
 def compute_user_rating(db: Session, keycloak_id: str) -> int:
     """
@@ -171,5 +160,5 @@ def compute_user_rating(db: Session, keycloak_id: str) -> int:
     )
 
     total_rating = post_balance + problem_balance + comment_balance
-    logger.info(f"Computed rating for user {keycloak_id}: {total_rating}")
+    logger.debug("user_computerating", extra={"user_id": keycloak_id, "balance": total_rating})
     return total_rating

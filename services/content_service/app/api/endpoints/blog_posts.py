@@ -18,9 +18,6 @@ router = APIRouter(prefix="/blogposts", tags=["blogposts"])
 
 
 def get_blogpost_or_404(post_id: str, db: Session = Depends(get_db)):
-    """
-    Вспомогательная функция
-    """
     blog_post = get_blog_post(db, post_id)
     if not blog_post:
         raise HTTPException(

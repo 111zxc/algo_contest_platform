@@ -16,7 +16,7 @@ app.include_router(languages_endpoint.router)
 @app.on_event("startup")
 def pull_required_images():
     client = get_docker_client()
-    logger.info("Got docker client on startup")
+    logger.info("get_docker_client", extra={'detail': 'startup'})
 
     images = required_images()
     for image in images:
@@ -27,7 +27,7 @@ def pull_required_images():
         except Exception as e:
             logger.error(f"Error pulling {image}: {e}")
 
-    logger.info("Pulled all needed images!")
+    logger.info("docker_images_pulled")
 
 
 if __name__ == "__main__":
