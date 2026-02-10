@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.endpoints import (
     blog_posts,
@@ -15,6 +16,11 @@ from app.api.endpoints import (
 from app.core.config import settings
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+Instrumentator(
+    should_group_status_codes=False,
+    excluded_handlers=["/metrics"],
+).instrument(app).expose(app, endpoint="/metrics")
 
 app.include_router(users.router)
 app.include_router(problems.router)

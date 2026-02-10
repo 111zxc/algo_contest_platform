@@ -166,6 +166,9 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+      - "15692:15692"
+    environment:
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_prometheus return_per_object_metrics true"
     networks:
       - backend
 
@@ -217,6 +220,91 @@ services:
     command: ["--strict.perms=false"]
     networks:
       - backend
+    # --------------------------------------------------------------------------
+  # Prometheus + Grafana
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./services/metrics/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    networks:
+      - backend
+
+  # --------------------------------------------------------------------------
+  # Exporters
+  # --------------------------------------------------------------------------
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - --path.rootfs=/host
+    volumes:
+      - /:/host:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - backend
+
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8082:8080"
+    networks:
+      - backend
+
+  postgres_exporter_content:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter_content
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:password@content_postgres:5432/content_db?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - backend
+    depends_on:
+      - content_postgres
+
+  postgres_exporter_tester:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter_tester
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:password@tester_postgres:5432/tester_db?sslmode=disable"
+    ports:
+      - "9188:9187"
+    networks:
+      - backend
+    depends_on:
+      - tester_postgres
 
 
 volumes:
@@ -227,6 +315,9 @@ volumes:
   keycloak_data:
   es_data:
   filebeat_data:
+  prometheus_data:
+  grafana_data:
+
 
 networks:
   backend:

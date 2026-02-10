@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.endpoints import solutions, languages as languages_endpoint
 from app.core.config import settings
@@ -8,6 +9,11 @@ from app.core.languages import required_images
 from app.services.docker_runner import get_docker_client
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+Instrumentator(
+    should_group_status_codes=False,
+    excluded_handlers=["/metrics"],
+).instrument(app).expose(app, endpoint="/metrics")
 
 app.include_router(solutions.router)
 app.include_router(languages_endpoint.router)
