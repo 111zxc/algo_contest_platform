@@ -10,8 +10,12 @@ services:
     env_file:
       - ./services/content_service/.env
     depends_on:
-      - content_postgres
-      - keycloak
+      content_postgres:
+        condition: service_healthy
+      content_migrate:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
     networks:
       - backend
 
@@ -23,12 +27,30 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: content_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d content_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
     volumes:
       - content_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
       - backend
+
+  content_migrate:
+    build: ./services/content_service
+    container_name: content_migrate
+    env_file:
+      - ./services/content_service/.env
+    depends_on:
+      content_postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    command: ["alembic", "upgrade", "head"]
+    restart: "on-failure"
 
   # --------------------------------------------------------------------------
   # TESTER SERVICE
@@ -43,9 +65,14 @@ services:
     volumes:
       - shared_tmp:/shared_tmp
     depends_on:
-      - tester_postgres
-      - keycloak
-      - dind
+      tester_postgres:
+        condition: service_healthy
+      tester_migrate:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+      dind:
+        condition: service_started
     networks:
       - backend
 
@@ -57,12 +84,30 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: tester_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tester_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
     volumes:
       - tester_data:/var/lib/postgresql/data
     ports:
-      - "5433:5433"
+      - "5433:5432"
     networks:
       - backend
+
+  tester_migrate:
+    build: ./services/tester_service
+    container_name: tester_migrate
+    env_file:
+      - ./services/tester_service/.env
+    depends_on:
+      tester_postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    command: ["alembic", "upgrade", "head"]
+    restart: "on-failure"
 
   # queue worker
   tester_worker:
@@ -220,7 +265,7 @@ services:
     command: ["--strict.perms=false"]
     networks:
       - backend
-    # --------------------------------------------------------------------------
+  # --------------------------------------------------------------------------
   # Prometheus + Grafana
   # --------------------------------------------------------------------------
   prometheus:

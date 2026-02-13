@@ -10,8 +10,6 @@ from app.models.base import Base
 engine = create_engine(settings.DATABASE_URL, future=True, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 
-Base.metadata.create_all(bind=engine)
-
 
 def get_db() -> Generator:
     db = SessionLocal()
