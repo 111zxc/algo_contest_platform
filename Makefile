@@ -1,4 +1,6 @@
 
+.DEFAULT_GOAL := help
+
 SHELL := /bin/sh
 
 CONTENT_DIR := services/content_service
@@ -18,7 +20,6 @@ COV_TARGET := app
         cov-html cov-html-content cov-html-tester
 
 help:
-	help:
 	@echo Targets:
 	@echo
 	@echo   make up                  - docker compose up -d --build
